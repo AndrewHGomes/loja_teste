@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="./css/global.css" />
+    <link rel="stylesheet" href="./css/index.css" />
+    <script type="module" src="./javascript/app.js" defer></script>
+    <script type="module" src="./javascript/alpine.min.js" defer></script>
+    <title></title>
+  </head>
+  <body>
+    <header
+      id="topo"
+      x-data="{ 
+    images: ['images/banner.png', 'images/empresa.jpg'], 
+    currentIndex: 0, 
+    intervalId: null
+  }"
+      x-init="
+    intervalId = setInterval(() => {
+      currentIndex = (currentIndex + 1) % images.length;
+    }, 4000) 
+  "
+    >
+      <img
+        id="carrossel-imagem"
+        x-bind:src="images[currentIndex]"
+        alt="Fundo de lanchonete"
+      />
+
+      <button
+        class="carousel-button prev"
+        @click="
+      currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
+      clearInterval(intervalId); // Reseta o temporizador ao clicar
+      intervalId = setInterval(() => { currentIndex = (currentIndex + 1) % images.length; }, 5000);
+    "
+      >
+        &lt;
+      </button>
+
+      <button
+        class="carousel-button next"
+        @click="
+      currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
+      clearInterval(intervalId); // Reseta o temporizador ao clicar
+      intervalId = setInterval(() => { currentIndex = (currentIndex + 1) % images.length; }, 5000);
+    "
+      >
+        &gt;
+      </button>
+    </header>
+    <img id="logo-empresa" src="./images/logo.png" alt="logo empresa" />
+    <main>
+      <section id="informacoes">
+        <h2 id="titulo-empresa"></h2>
+        <div class="info cidade">
+          <img id="img-mapa" src="./images/mapa.png" alt="mapa" />
+          <h4 id="cidade-empresa"></h4>
+        </div>
+        <div class="info status">
+          <span></span><span>RETIRAR | ENTREGAR</span><span></span>
+        </div>
+        <a href="./images/video.mp4" class="aprendanavegar"
+          >COMO UTILIZAR O SISTEMA <i class="fas fa-video"></i
+        ></a>
+      </section>
+      <section id="produtos">
+        <nav class="nav-categorias"></nav>
+      </section>
+      <aside>
+        <i class="fa-solid fa-x"></i>
+        <div class="cabecalho">
+          <img src="./images/logo.png" alt="logo da empresa" />
+          <h3></h3>
+          <h4></h4>
+        </div>
+        <table class="tabela1">
+          <thead>
+            <tr>
+              <th>PREPARO</th>
+              <th>RETIRAR</th>
+              <th>ENTREGAR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+        <table class="tabela2">
+          <thead>
+            <tr>
+              <th>DIA SEMANA</th>
+              <th>ABERTURA</th>
+              <th>FECHAMENTO</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <h5 class="fechado-aberto"></h5>
+        <h5 class="contato-empresa"></h5>
+      </aside>
+    </main>
+    <footer>
+      <h4>
+        <a href="">
+          <img src="./images/report.png" alt="" />
+          MEUS PEDIDOS
+        </a>
+      </h4>
+    </footer>
+  </body>
+</html>
