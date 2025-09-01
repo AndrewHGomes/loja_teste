@@ -38,7 +38,7 @@
         class="carousel-button prev"
         @click="
       currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
-      clearInterval(intervalId); // Reseta o temporizador ao clicar
+      clearInterval(intervalId);
       intervalId = setInterval(() => { currentIndex = (currentIndex + 1) % images.length; }, 5000);
     "
       >
@@ -49,7 +49,7 @@
         class="carousel-button next"
         @click="
       currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
-      clearInterval(intervalId); // Reseta o temporizador ao clicar
+      clearInterval(intervalId);
       intervalId = setInterval(() => { currentIndex = (currentIndex + 1) % images.length; }, 5000);
     "
       >
@@ -74,7 +74,7 @@
       <section id="produtos">
         <nav class="nav-categorias"></nav>
       </section>
-      <aside>
+      <aside class="esconder">
         <i class="fa-solid fa-x"></i>
         <div class="cabecalho">
           <img src="./images/logo.png" alt="logo da empresa" />

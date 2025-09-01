@@ -4,8 +4,18 @@ export async function carregarEmpresa() {
   const objEmpresa = await repassarDados("empresa");
 
   if (objEmpresa && objEmpresa.length > 0) {
-    const { Fantasia, Telefone, Cidade, aberto, tempoentrega, ativaentrega } =
-      objEmpresa[0];
+    const {
+      Fantasia,
+      Telefone,
+      Cidade,
+      aberto,
+      tempoentrega,
+      ativaentrega,
+      Endereco,
+      Bairro,
+      Numero,
+      TempoPreparo,
+    } = objEmpresa[0];
 
     return {
       Fantasia,
@@ -14,8 +24,12 @@ export async function carregarEmpresa() {
       aberto,
       tempoentrega,
       ativaentrega,
+      Endereco,
+      Bairro,
+      Numero,
+      TempoPreparo,
     };
   }
 
-  return null;
+  return [];
 }

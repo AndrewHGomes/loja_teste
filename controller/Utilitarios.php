@@ -21,13 +21,10 @@ class Utilitarios
   {
     try {
       $sql = "SELECT * FROM parametros";
-
       $stmt = $this->conexao->prepare($sql);
       $stmt->execute();
-
       return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-
       error_log("Erro ao listar parametros: " . $e->getMessage());
       return [];
     }
@@ -37,31 +34,12 @@ class Utilitarios
   {
     try {
       $sql = "SELECT * FROM horarios";
-
       $stmt = $this->conexao->prepare($sql);
       $stmt->execute();
-
       return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-
       error_log("Erro ao listar horarios: " . $e->getMessage());
       return [];
     }
   }
 }
-
-$utilitarios = new Utilitarios;
-
-if (isset($_GET['pegarParametros'])) {
-  $parametros = $utilitarios->pegarParametros();
-  echo json_encode($parametros);
-  exit;
-}
-
-if (isset($_GET['pegarHorarios'])) {
-  $horarios = $utilitarios->pegarHorarios();
-  echo json_encode($horarios);
-  exit;
-}
-
-echo json_encode(['erro' => 'Nenhum dado solicitado.']);

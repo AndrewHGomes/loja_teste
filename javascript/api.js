@@ -1,5 +1,3 @@
-// api.js
-
 const URL_BASE_API = "controller/api.php";
 
 async function pegarDados(endpoint) {

@@ -5,6 +5,8 @@ require_once 'Conexao.php';
 require_once 'Empresa.php';
 require_once 'Categorias.php';
 require_once 'Mercadorias.php';
+require_once 'Utilitarios.php';
+require_once 'Status.php';
 
 try {
   $recurso = isset($_GET['recurso']) ? $_GET['recurso'] : null;
@@ -22,6 +24,18 @@ try {
     case 'mercadorias':
       $mercadorias = new Mercadorias;
       $dados = $mercadorias->buscarMercadorias();
+      break;
+    case 'parametros':
+      $utilitarios = new Utilitarios;
+      $dados = $utilitarios->pegarParametros();
+      break;
+    case 'horarios':
+      $utilitarios = new Utilitarios;
+      $dados = $utilitarios->pegarHorarios();
+      break;
+    case 'status':
+      $status = new Status;
+      $dados = $status->statusDoDia();
       break;
     default:
       http_response_code(400);
