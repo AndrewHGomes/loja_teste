@@ -138,7 +138,7 @@ async function gerenciarAside() {
 
   const tdEntregar = capturar(".tabela1 td:nth-of-type(3)");
   if (tdEntregar) {
-    tdEntregar.textContent = informacoes.aberto === "S" ? "SIM" : "N";
+    tdEntregar.textContent = informacoes.aberto === "S" ? "SIM" : "NÃO";
   }
 
   const tabelaHorarios = capturar(".tabela2 tbody");
@@ -178,7 +178,9 @@ async function gerenciarAside() {
   const contatoEmpresa = capturar(".contato-empresa");
   if (contatoEmpresa) {
     contatoEmpresa.textContent =
-      informacoes.Telefone != null ? informacoes.Telefone : "";
+      informacoes.Telefone != null
+        ? `ENTRE EM CONTATO ${informacoes.Telefone}`
+        : "";
 
     contatoEmpresa.style.display =
       informacoes.Telefone != null ? "block" : "none";

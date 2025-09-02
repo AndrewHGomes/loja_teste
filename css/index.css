@@ -138,11 +138,10 @@ main {
 }
 
 aside {
-  font-size: 0.9em;
   position: fixed;
   z-index: 30;
   top: 0;
-  left: 0; /* Altera 'right' para 'left' para o deslize da esquerda */
+  left: 0;
   background-color: rgba(0, 0, 0, 0.8);
   width: 100%;
   height: 100%;
@@ -150,34 +149,27 @@ aside {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 2em;
-
-  /* Movendo o aside para fora da tela (para a esquerda) */
+  gap: 1em;
   transform: translateX(-100%);
-
-  /* Adicionando a transição para um movimento suave */
   transition: transform 0.5s ease;
 }
 
-/* Esta é a única classe que você precisa no JS */
 .aparecer {
-  /* Move o aside de volta para a posição original */
   transform: translateX(0);
 }
 
 aside i {
   position: absolute;
-  top: 1em;
-  right: 1em;
+  top: 0.9em;
+  right: 0.9em;
   background-color: #c00;
   color: #fff;
   padding: 0.3em 0;
   border-radius: 3px;
-  font-size: 1.1em;
+  font-size: 1.2em;
 }
 
 aside img {
-  /* display: block; */
   width: 7em;
   height: 6em;
   border-radius: 50%;

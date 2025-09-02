@@ -16,8 +16,9 @@ header {
 header a {
   text-decoration: none;
   color: #fff;
+  font-size: 1.2em;
 }
 
-header i {
+/* header i {
   color: #fff;
-}
+} */
