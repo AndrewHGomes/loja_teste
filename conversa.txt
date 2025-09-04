@@ -1,0 +1,4496 @@
+<?php
+
+// controllers/acaocarrinho.php
+
+
+
+require 'config.php';
+
+require 'carrinho.php';
+
+
+
+unset($_SESSION['carrinho']);
+
+unset($_SESSION['itens']);
+
+header("Location: ../index.php");
+
+
+
+<?php
+
+// controllers/ajaxpedido.php
+
+
+
+require 'config.php';
+
+
+
+class requisitar extends conexao
+
+{
+
+
+
+  public function reader()
+
+  {
+
+
+
+    $fone = $_SESSION['fone'];
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT Data,Hora,totalpedido,Codigo FROM vendas
+
+        WHERE telefone = $fone
+
+        ORDER BY Codigo DESC
+
+      ");
+
+
+
+    $sql->execute();
+
+
+
+    if ($sql->rowCount()) {
+
+
+
+      foreach ($sql->fetchAll() as $value) {
+
+
+
+        echo "<li>
+
+
+
+              <a href='viewpedido.php?param=" . $value['Codigo'] . "'>" . date('d/m/Y', strtotime($value['Data'])) . " - " . $value['Hora'] . "</a>
+
+              <a href='viewpedido.php?param=" . $value['Codigo'] . "' class='red'><b>Detalhes</b><i class='fas fa-chevron-right'></i></a>
+
+              <span class='totalpedido'>";
+
+
+
+        if (!is_null($value['totalpedido'])) {
+
+          echo "R$ " . $value['totalpedido'];
+
+        }
+
+
+
+        echo "</span>
+
+
+
+            </li>";
+
+      }
+
+    }
+
+  }
+
+}
+
+
+
+$req = new requisitar;
+
+$req->reader();
+
+
+
+<?php
+
+// controllers/api_delivery.php
+
+
+
+# display de erros #
+
+error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
+
+date_default_timezone_set("America/Fortaleza");
+
+header("Access-Control-Allow-Origin: *");
+
+header("Access-Control-Allow-Headers: *");
+
+
+
+# classe responsavel pela conexao #
+
+require 'config.php';
+
+
+
+# classe responsavel pela api #
+
+class pedidos extends conexao
+
+{
+
+
+
+  # seta os pedidos como enviado ao serem consumidos pela aplicação da retaguarda #
+
+  public function update()
+
+  {
+
+
+
+    try {
+
+
+
+      $hrs = date("Y-m-d H:i:s");
+
+      $sql = $this->pdo->prepare("UPDATE vendas SET enviado = '$hrs' WHERE isnull(enviado)");
+
+      $sql->execute();
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # converte data no formato exigido pela retaguarda #
+
+  public function convert($data)
+
+  {
+
+    return date("d-m-Y", strtotime($data));
+
+  }
+
+
+
+  # seleciona os pedidos pendentes para serem consumidos pela aplicação da retaguarda #
+
+  public function vendas()
+
+  {
+
+
+
+    $url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+
+    $partes = explode("php", $url);
+
+
+
+    if (strlen($partes[1]) > 0) {
+
+
+
+      $cd = substr($partes[1], 1, 100);
+
+      $sql = $this->pdo->prepare("SELECT * FROM vendas WHERE Codigo = $cd");
+
+    } else {
+
+
+
+      $sql = $this->pdo->prepare("SELECT * FROM vendas WHERE isnull(enviado)");
+
+    }
+
+
+
+    try {
+
+
+
+      $sql->execute();
+
+
+
+      foreach ($sql->fetchAll(\PDO::FETCH_ASSOC) as $dados) {
+
+
+
+        $array[] = [
+
+          "codigo" => intval($dados['Codigo']),
+
+          "data" => $this->convert($dados['Data']),
+
+          "hora" => $dados['Hora'],
+
+          "troco" => strtr($dados['troco'], ".", ","),
+
+          "nome" => $dados['nome'],
+
+          "endereco" => $dados['endereco'],
+
+          "numero" => $dados['numero'],
+
+          "bairro" => $dados['bairro'],
+
+          "cidade" => $dados['cidade'],
+
+          "uf" => $dados['UF'],
+
+          "enviado" => '',
+
+          "taxatransp" => strtr($dados['TaxaTransp'], ".", ","),
+
+          "formapgto" => $dados['formapgto'],
+
+          "obs" => $dados['Obs'] ? $dados['Obs'] : "",
+
+          "telefone" => $dados['telefone'],
+
+          "complemento" => $dados['complemento'],
+
+          "tipo" => $dados['tipo'],
+
+          "md5" => $dados['chave'],
+
+          "dataentrega" => $dados['DataEntrega'] ? $dados['DataEntrega'] : "",
+
+          "horaentrega" => $dados['HoraEntrega'] ? $dados['HoraEntrega'] : "",
+
+          "numeromesa" => intval($dados['NumeroMesa']),
+
+          "totalpedido" => number_format($dados['totalpedido'], 2, ",", ""),
+
+          "qtditens" => $this->contaitens($dados['Codigo']),
+
+          "itens" => $this->itens($dados['Codigo']),
+
+        ];
+
+      }
+
+
+
+      if ($sql->rowCount()) {
+
+        $vendas = ["vendas" => $array];
+
+      } else {
+
+        $vendas = json_decode('{}');
+
+      }
+
+
+
+      $datahora = date("Y-m-d H:i:s");
+
+
+
+      if (print_r(json_encode($vendas))) {
+
+
+
+        if ($this->contaitens($dados['Codigo']) < 1) {
+
+
+
+          $nomelog = date("Y_m_d_H_i_s") . ".txt";
+
+          $arquivo = fopen($nomelog, 'w');
+
+          fwrite($arquivo, "NENHUM ITEM RECUPERADO DO PEDIDO ÁS " . date('d/m/y H:i:s') . " - PEDIDO " . $dados['Codigo']);
+
+          fclose($arquivo);
+
+        }
+
+
+
+        $sql = $this->pdo->prepare("UPDATE vendas SET enviado = '$datahora' WHERE isnull(enviado)");
+
+        $sql->execute();
+
+      }
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # seleciona os itens pendentes de uma venda #
+
+  public function contaitens($cod)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("SELECT * FROM vendasdet WHERE CodVenda = $cod");
+
+      $sql->execute();
+
+
+
+      return count($sql->fetchAll(\PDO::FETCH_ASSOC));
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # seleciona os itens pendentes de uma venda #
+
+  public function itens($cod)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("SELECT * FROM vendasdet WHERE CodVenda = $cod");
+
+      $sql->execute();
+
+
+
+      foreach ($sql->fetchAll(\PDO::FETCH_ASSOC) as $dados) {
+
+
+
+        $temcomp = count($this->comps($dados['Codigo']));
+
+
+
+        if ($temcomp > 0) {
+
+
+
+          $item[] = [
+
+            "qtd" => intval($dados['Qtd']),
+
+            "valor" => strtr(number_format($dados['Valor'], 2, '.', ''), ".", ","),
+
+            "hora" => $dados['Hora'],
+
+            "vlritem" => strtr($dados['VlrItem'], ".", ","),
+
+            "descricao" => utf8_encode($dados['Descricao']),
+
+            "codigo" => intval($dados['Codigo']),
+
+            "codmerc" => intval($dados['CodMerc']),
+
+            "item" =>   intval($dados['Item']),
+
+            "codvenda" => intval($dados['CodVenda']),
+
+            "data" => date("d-m-Y", strtotime($dados['Data'])),
+
+            "obs" => $dados['Observacao'],
+
+            "md5" => $dados['chave'],
+
+            "complementos" => $this->comps($dados['Codigo'])
+
+          ];
+
+        } else {
+
+
+
+          $item[] = [
+
+            "qtd" => intval($dados['Qtd']),
+
+            "valor" => strtr($dados['Valor'], ".", ","),
+
+            "hora" => $dados['Hora'],
+
+            "vlritem" => strtr($dados['VlrItem'], ".", ","),
+
+            "descricao" => utf8_encode($dados['Descricao']),
+
+            "codigo" => intval($dados['Codigo']),
+
+            "codmerc" => intval($dados['CodMerc']),
+
+            "item" =>   intval($dados['Item']),
+
+            "codvenda" => intval($dados['CodVenda']),
+
+            "data" => date("d-m-Y", strtotime($dados['Data'])),
+
+            "obs" => $dados['Observacao'],
+
+            "md5" => $dados['chave'],
+
+          ];
+
+        }
+
+      }
+
+
+
+      return $item;
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # seleciona os complementos de um determinado item #
+
+  public function comps($cod)
+
+  {
+
+
+
+    try {
+
+
+
+      $item = [];
+
+      $sql = $this->pdo->prepare("SELECT * FROM vendasdetcomp WHERE idVendasDet = $cod");
+
+      $sql->execute();
+
+
+
+      foreach ($sql->fetchAll(\PDO::FETCH_ASSOC) as $dados) {
+
+
+
+        $comp = [
+
+          "codigo" => intval($dados['ID']),
+
+          "idvendasdet" => intval($dados['idVendasDet']),
+
+          "idcodmerc" => intval($dados['idProdComp']),
+
+          "qtd" => intval($dados['Qtd']),
+
+          "valor" => strtr($dados['Valor'], ".", ","),
+
+          "md5" => $dados['chave']
+
+        ];
+
+
+
+        array_push($item, $comp);
+
+      }
+
+
+
+      return $item;
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+}
+
+
+
+$pedidos = new pedidos;
+
+$pedidos->vendas();
+
+
+
+<?php
+
+// controllers/api.php
+
+
+
+require 'config.php';
+
+
+
+class delivery extends conexao
+
+{
+
+
+
+  public function parametros()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT * FROM parametros");
+
+    $sql->execute();
+
+
+
+    $param = $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+    $idparam = $param['id'];
+
+
+
+    $sqx = $this->pdo->prepare("SELECT * FROM horarios WHERE idparam = $idparam");
+
+    $sqx->execute();
+
+
+
+    $horarios = $sqx->fetchAll(\PDO::FETCH_ASSOC);
+
+    $horariosarray = [];
+
+
+
+    for ($i = 0; $i < count($horarios); $i++) {
+
+      $horariosarray[] = ["dia" => $horarios[$i]['dia'], "abertura" => $horarios[$i]['abertura'], "fechamento" => $horarios[$i]['fechamento']];
+
+    }
+
+
+
+    $montajson = json_encode([
+
+      "aberto" => $param['aberto'],
+
+      "entrega" => $param['ativaentrega'],
+
+      "qrcodenome" => $param['qrcodecomnome'],
+
+      "txentrega" => $param['txentrega'],
+
+      "tempoentrega" => $param['tempoentrega'],
+
+      "ativatempoentrega" => $param['ativatempoentrega'],
+
+      "horarios" => $horariosarray
+
+    ]);
+
+
+
+    print_r($montajson);
+
+  }
+
+
+
+  public function cidades()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT * FROM cidades");
+
+    $sql->execute();
+
+
+
+    $cidades = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC) : [];
+
+    $arraycidades = [];
+
+
+
+    for ($i = 0; $i < count($cidades); $i++) {
+
+
+
+      $arraycidades[] = [
+
+        "codigo" => $arraycidades[$i]['Codigo'],
+
+        "descricao" => $arraycidades[$i]['Descricao'],
+
+        "valor" => $arraycidades[$i]['Valor'],
+
+        "ativo" => $arraycidades[$i]['Ativa'],
+
+        "data" => $arraycidades[$i]['Data'],
+
+        "hora" => $arraycidades[$i]['Hora'],
+
+        "excluido" => $arraycidades[$i]['Excluido'],
+
+        "tempopreparo" => $arraycidades[$i]['TempoPreparo'],
+
+      ];
+
+    }
+
+
+
+    $json = json_encode(["cidades" => $arraycidades]);
+
+
+
+    print_r($json);
+
+  }
+
+
+
+  public function bairros() {}
+
+}
+
+
+
+
+
+$delivery = new delivery;
+
+
+
+if (isset($_GET['getparam']) && empty($_GET['param'])) {
+
+  $delivery->parametros();
+
+}
+
+
+
+if (isset($_GET['getcidades']) && empty($_GET['getcidades'])) {
+
+  $delivery->cidades();
+
+}
+
+
+
+<?php
+
+// controllers/auxiliar.php
+
+
+
+# NOVAS FUNCOES COMPATIVEIS COM REQUISIÇÕES JAVASCRIPT #
+
+
+
+# PARAMETROS GLOBAIS #
+
+require 'config.php';
+
+date_default_timezone_set("America/Fortaleza");
+
+
+
+# INICIO DA CLASSE GLOBAL AUXILIAR - COM HERANÇA DA CONEXÃO #
+
+class auxiliar extends conexao
+
+{
+
+
+
+  public function returns($query)
+
+  {
+
+
+
+    try {
+
+
+
+      $dados = $query->execute() ? $query->fetchAll(\PDO::FETCH_ASSOC) : [];
+
+      print_r(json_encode($dados));
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # RETORNA OS HORARIOS #
+
+  public function getHours($value)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("SELECT * FROM horarios");
+
+      $this->returns($sql);
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # RETORNA OS PARAMETROS #
+
+  public function getParam($value)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("SELECT * FROM parametros");
+
+      $this->returns($sql);
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # RETORNA AS CIDADES #
+
+  public function getCitys($value)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("SELECT * FROM cidades");
+
+      $this->returns($sql);
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # RETORNA OS BAIRROS #
+
+  public function getAddre($value)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("SELECT * FROM bairros");
+
+      $this->returns($sql);
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # RETORNA IMAGENS DOS PRODUTOS #
+
+  public function getImage($value)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("SELECT imagem FROM mercadorias WHERE Codigo = $value");
+
+      $this->returns($sql);
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # RETORNA OS GRUPOS #
+
+  public function getGroups($value)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("SELECT * FROM grupo");
+
+      $this->returns($sql);
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # RETORNA OS DADOS DA EMPRESA #
+
+  public function getCompany($value)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("SELECT * FROM empresa");
+
+      $this->returns($sql);
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # RETORNA AS CATEGORIAS #
+
+  public function getCategories($value)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          SELECT * FROM categorias
+
+          WHERE Ativo = 'S'
+
+        ");
+
+      $this->returns($sql);
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # RETORNA OS COMPLEMENTOS #
+
+  public function getComplements($value)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          SELECT * FROM mercadorias
+
+          WHERE Complemento ='S'
+
+          AND Ativo = 'S'
+
+        ");
+
+      $this->returns($sql);
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+}
+
+
+
+$auxiliar = new auxiliar;
+
+$auxiliar->getHours('');
+
+
+
+<?php
+
+// controllers/bairros.php
+
+
+
+// require'config.php';
+
+class bairros extends conexao
+
+{
+
+
+
+  public function getBairros()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT * FROM bairros WHERE Ativo = 'S' AND excluido = 'N'
+
+      ");
+
+
+
+    $sql->execute();
+
+
+
+    if ($sql->rowCount()) {
+
+
+
+      echo "<select class='bairroselect' required>";
+
+      echo "<option value=' - 0'>Selecione um Bairro</option>";
+
+
+
+      foreach ($sql->fetchAll(\PDO::FETCH_ASSOC) as $value) {
+
+
+
+        echo "<option value='" . $value['Bairro'] . " - " . $value['Valor'] . "'>" . $value['Bairro'] . "</option>";
+
+      }
+
+
+
+      echo "</select>";
+
+    }
+
+  }
+
+}
+
+
+
+$bairros = new bairros;
+
+
+
+?>
+
+<!--
+
+<?php
+
+
+
+// require'config.php';
+
+
+
+class geral extends conexao
+
+{
+
+
+
+  public function getbairros()
+
+  {
+
+
+
+    try {
+
+
+
+      $query = "
+
+          SELECT Codigo, Bairro, Valor, ValorMax FROM bairros
+
+          WHERE ativo = 'S'
+
+          ORDER BY bairro ASC
+
+        ";
+
+
+
+      $sql = $this->pdo->prepare($query);
+
+      $sql->execute();
+
+
+
+      $obj = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC) : [];
+
+      return json_encode($obj, JSON_PRETTY_PRINT);
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+}
+
+
+
+$geral = new geral;
+
+echo "<pre>";
+
+echo $geral->getbairros();
+
+
+
+?> -->
+
+
+
+<?php
+
+// controllers/carrinho.php
+
+
+
+// require'produtos.php';
+
+
+
+class carrinho extends conexao
+
+{
+
+
+
+  public function produtocart($array)
+
+  {
+
+
+
+    session_start();
+
+
+
+    if (!isset($_SESSION['fatia'])) {
+
+      $_SESSION['fatia'];
+
+    }
+
+
+
+    if (!isset($_SESSION['carrinho'])) {
+
+      $_SESSION['carrinho'] = [];
+
+    }
+
+
+
+    if ($array['length']) {
+
+      $length = explode(" ", $array['length']);
+
+      $length[1] == "fracao" ? $_SESSION['fatia'] += 1 : null;
+
+    }
+
+
+
+    if (count($array['acomp']) > 0) {
+
+      $acpt = $array['acomp'];
+
+    } else {
+
+      $acpt = [];
+
+    }
+
+
+
+    $montaitem = [
+
+      "produto" => $array['codproduto'],
+
+      "tamanho" => $length ? $length[0] : 0,
+
+      "fracao"  => $length ? $length[1] : 0,
+
+      "borda"   => $array['borda'] ? $array['borda'] : 0,
+
+      "acomp"   => $acpt,
+
+      "obser"   => $array['observacao']
+
+    ];
+
+
+
+    // header("location: carrinho.php");
+
+
+
+  }
+
+
+
+  public function aux($cod)
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT mercadorias.Descricao, mercadorias.Venda FROM mercadorias
+
+        WHERE Codigo = $cod
+
+      ");
+
+    $sql->execute();
+
+
+
+    return $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+  }
+
+
+
+  public function listcart()
+
+  {
+
+
+
+    session_start();
+
+    $totalprod = 0;
+
+    $totalacre = 0;
+
+    $valorborda = 0;
+
+
+
+    if (isset($_SESSION['carrinho'])) {
+
+
+
+      foreach ($_SESSION['carrinho'] as $key => $value) {
+
+        // print_r($value);
+
+
+
+        $totalprod += $value['quantidade'] * $value['valor'];
+
+
+
+        echo '
+
+            <div class="group">
+
+              <div class="row">
+
+              <div class="actions actions' . $key . '">
+
+              <a href="?remove=' . $key . '">Excluir</a>
+
+            ';
+
+        // <a href="selecionar.php?key='.$key.'">Editar</a>
+
+        echo '</div>
+
+                <span class="descricao">' . $value['quantidade'] . 'X ' . $value['descricao'] . '</span>
+
+              ';
+
+
+
+        echo '<span class="price">' . number_format($value['valor'], 2, '.', '') . '</span>';
+
+        echo '<img src="img/elipses.png" width="20px" class="pontos" onclick="abrir(' . $key . ')">
+
+              </div>';
+
+
+
+        $codtamanho = $value['tamanho'];
+
+        $sql = $this->pdo->prepare("SELECT * FROM tamanhos WHERE Codigo = $codtamanho");
+
+        $sql->execute();
+
+
+
+        $dadostamanho = $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+
+
+        echo '<span class="complemento">';
+
+
+
+        if ($_SESSION['carrinho'][$key]['complemento'] > 0) {
+
+
+
+          foreach ($_SESSION['carrinho'][$key]['complemento'] as $comp) {
+
+            echo "<br>1 X " . $this->aux($comp)['Descricao'];
+
+            $totalacre += $this->aux($comp)['Venda'] * $value['quantidade'];
+
+          }
+
+        }
+
+
+
+        echo '</span>';
+
+        echo "<br>";
+
+
+
+        if (count($dadostamanho) > 0) {
+
+          // echo '<div class="extras">PIZZA / <em>'.$value['fracao'].'</em> '.$dadostamanho['Tamanho'].' COM BORDA RECHEADA DE '.strtoupper($this->aux($value['borda'])['Descricao']).'</div>';
+
+          echo '<div class="extras">';
+
+          echo "<em>" . $value['fracao'] . "</em> PIZZA  ( TAM: " . $dadostamanho['Tamanho'] . ' )';
+
+          echo $value['borda'] ? ' COM BORDA RECHEADA DE ' . strtoupper($this->aux($value['borda'])['Descricao']) : '';
+
+          echo '</div>';
+
+        }
+
+
+
+        $valorborda += $this->aux($value['borda'])['Venda'] * $value['quantidade'];
+
+        echo '</div>';
+
+      }
+
+
+
+      $total = $totalprod + $totalacre + $valorborda;
+
+      $_SESSION['total']  = $total;
+
+    }
+
+  }
+
+
+
+  public function traztamanhos($t)
+
+  {
+
+
+
+    $x = $t + 1;
+
+
+
+    $sql = $this->pdo->prepare("SELECT * FROM marmitas WHERE Codigo = $x");
+
+    $sql->execute();
+
+
+
+    return $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+  }
+
+}
+
+
+
+$carrinho = new carrinho;
+
+
+
+<?php
+
+// controllers/categorias.php
+
+
+
+class categorias extends conexao
+
+{
+
+
+
+  public function read()
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          SELECT * FROM categorias WHERE ativo = 'S' AND excluido = 'N' ORDER BY Ordem ASC
+
+        ");
+
+
+
+      $sql->execute();
+
+
+
+      $dados = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC) : [];
+
+
+
+      for ($i = 0; $i < count($dados); $i++) {
+
+
+
+        echo '<a href="#' . $dados[$i]['descricao'] . '">
+
+              <li>' . $dados[$i]['descricao'] . '</li>
+
+             </a>';
+
+      }
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+}
+
+
+
+$categorias = new categorias;
+
+
+
+<?php
+
+// controllers/complemento.php
+
+
+
+require 'config.php';
+
+
+
+class complemento extends conexao
+
+{
+
+
+
+  public function acomp($cod)
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT * FROM mercadorias WHERE FIND_IN_SET(" . $cod . ", ComplementoCod) ORDER BY Descricao ASC
+
+      ");
+
+    $sql->execute();
+
+
+
+    $dados = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC) : [];
+
+
+
+    print_r(json_encode($dados));
+
+  }
+
+
+
+  public function normal($codmerc)
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT * FROM mercadorias WHERE Codigo = $codmerc
+
+      ");
+
+
+
+    $sql->execute();
+
+
+
+    $dados = $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+    $RequerComplementoCod = explode(',', $dados['RequerComplementoCod']);
+
+
+
+    for ($i = 0; $i < count($RequerComplementoCod); $i++) {
+
+
+
+      if ($i < count($RequerComplementoCod) - 1) {
+
+
+
+        $query = "FIND_IN_SET('" . $RequerComplementoCod[$i] . "', ComplementoCod) OR ";
+
+        $montagem = $montagem . $query;
+
+      } else {
+
+
+
+        $query = "FIND_IN_SET('" . $RequerComplementoCod[$i] . "', ComplementoCod)";
+
+        $montagem = $montagem . $query;
+
+      }
+
+    }
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT mercadorias.*,grupo.Descricao as Grupo FROM mercadorias
+
+        INNER JOIN grupo ON (mercadorias.idgrupo = grupo.Codigo)
+
+        WHERE " . $montagem . " AND Complemento = 'S'
+
+      ");
+
+    // print_r($sql);exit;
+
+
+
+    $sql->execute();
+
+
+
+    $complementos = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC) : [];
+
+
+
+    print_r(json_encode($complementos));
+
+  }
+
+}
+
+
+
+$complemento = new complemento;
+
+
+
+if (isset($_GET['acomp']) && is_numeric($_GET['acomp'])) {
+
+  $complemento->acomp($_GET['acomp']);
+
+}
+
+
+
+if (isset($_GET['normal']) && is_numeric($_GET['normal'])) {
+
+  $complemento->normal($_GET['normal']);
+
+}
+
+
+
+<?php
+
+// controllers/config.php
+
+
+
+session_start();
+
+date_default_timezone_set("America/Fortaleza");
+
+
+
+class conexao
+
+{
+
+
+
+  public $pdo;
+
+
+
+  public function __construct()
+
+  {
+
+
+
+    try {
+
+
+
+      $this->pdo = new PDO("mysql:host=127.0.0.1;dbname=delivery_raribbs;charset=utf8", "root", "");
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+}
+
+$conexao = new conexao;
+
+<?php
+
+// controllers/empresa.php
+
+
+
+class empresa extends conexao
+
+{
+
+
+
+  public function read()
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          SELECT * FROM empresa
+
+          INNER JOIN parametros ON (parametros.id = empresa.Codigo)
+
+          WHERE Codigo = 1
+
+        ");
+
+      $sql->execute();
+
+
+
+      $dados = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC)[0] : [];
+
+
+
+      return $dados;
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  public function objempresa()
+
+  {
+
+
+
+    try {
+
+
+
+      if (isset($_SESSION['agendamento'])) {
+
+
+
+        $partes = explode(' - ', $_SESSION['agendamento']['cidade']);
+
+        $city = $partes[0];
+
+
+
+        $sql = $this->pdo->prepare("
+
+          SELECT * FROM empresa
+
+          INNER JOIN parametros ON (parametros.id = empresa.Codigo)
+
+          INNER JOIN cidades ON (cidades.CodEmpresa = empresa.Codigo)
+
+          WHERE empresa.Codigo = 1 AND cidades.Codigo = $city
+
+        ");
+
+      } else {
+
+
+
+        $sql = $this->pdo->prepare("
+
+          SELECT * FROM empresa
+
+          INNER JOIN parametros ON (parametros.id = empresa.Codigo)
+
+          WHERE Codigo = 1
+
+        ");
+
+      }
+
+
+
+      $sql->execute();
+
+
+
+      $dados = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC)[0] : [];
+
+
+
+      return $dados;
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+}
+
+
+
+$empresa = new empresa;
+
+
+
+<?php
+
+// controllers/finalizar.php
+
+
+
+require 'config.php';
+
+
+
+class finalizar extends conexao
+
+{
+
+
+
+  public function codVenda($key)
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT vendas.Codigo FROM vendas WHERE chave = '$key'");
+
+    $sql->execute();
+
+
+
+    return $sql->fetchAll()[0]['Codigo'];
+
+  }
+
+
+
+  public function concluir()
+
+  {
+
+
+
+    try {
+
+
+
+      require 'empresa.php';
+
+      require 'utilitarios.php';
+
+
+
+      $hora = date('H:i:s');
+
+      $data = date('Y-m-d');
+
+
+
+      if (isset($_POST['fpagamento']) && !empty($_POST['fpagamento'])) {
+
+        $form = htmlspecialchars($_POST['fpagamento']);
+
+      } else {
+
+        $form = 'D';
+
+      }
+
+
+
+      if (!empty($_POST['troco'])) {
+
+        $troc = htmlspecialchars($_POST['troco']);
+
+      } else {
+
+        $troc = 0;
+
+      }
+
+
+
+      if (isset($_POST['mesa'])) {
+
+
+
+        $nome = htmlspecialchars(strtoupper($_POST['nome']));
+
+        $ende = "neste";
+
+        $nume = "0";
+
+        $comp = "neste";
+
+        $bair = "neste";
+
+        $mesa = $_POST['mesa'];
+
+        $forma = "M";
+
+        $form = "D";
+
+        $taxa = 0;
+
+      } else {
+
+
+
+        $nome = htmlspecialchars(strtoupper($_POST['nome']));
+
+        $ende = htmlspecialchars(strtoupper($_POST['rua']));
+
+        $nume = htmlspecialchars(strtoupper($_POST['numero']));
+
+        $comp = htmlspecialchars(strtoupper($_POST['complemento']));
+
+        $bair = htmlspecialchars(strtoupper($_POST['bairro']));
+
+        $mesa = 0;
+
+        $forma = $_POST['forma'];
+
+        $taxa  = $_POST['taxatransporte'];
+
+      }
+
+
+
+      if (isset($_SESSION['agendamento'])) {
+
+        $pedaco = explode('-', $_SESSION['agendamento']['cidade']);
+
+        $cida = $uteis->retornaCidade($pedaco[0]);
+
+        $dataagendamento = $_SESSION['agendamento']['data'];
+
+        $horaagendamento = $_SESSION['agendamento']['hora'];
+
+      } else {
+
+        $cida = "SAO JOSÉ DO RIO PARDO";
+
+      }
+
+
+
+      $obsgeral = $_SESSION['obsgeral'];
+
+      $esta = "SP";
+
+      $tele = $_SESSION['fone']; # pegar da session #
+
+      $grav = "N";
+
+      $tipo = $_POST['forma'];
+
+      $chav = md5($_SESSION['fone'] . date("Y-m-d H:i:s"));
+
+      $origem = $_SESSION['origem'];
+
+
+
+      // exit;
+
+
+
+      if (substr($tele, 0, 2) != 55) {
+
+        $fone = "55" . $tele;
+
+      } else {
+
+        $fone = $tele;
+
+      }
+
+
+
+      $arraylog = [
+
+        "dadoscliente" => $fone . " - " . $nome . "  " . $ende . "," . $nume . " - " . $bair,
+
+        "pedido" => $_SESSION['carrinho']
+
+      ];
+
+
+
+      // gera log *novo* //
+
+      $nomelog = date("d_m_Y_H_i_s") . ".txt";
+
+      $arquivo = fopen($nomelog, 'w');
+
+      fwrite($arquivo, json_encode($arraylog));
+
+      fclose($arquivo);
+
+      // fim log //
+
+
+
+      //print_r($fone);exit;
+
+      # recupera taxa de transporte #
+
+
+
+      # insere o cabeçalho da venda #
+
+
+
+      if (isset($_SESSION['agendamento'])) {
+
+
+
+        $sql = $this->pdo->prepare("
+
+        INSERT INTO vendas
+
+        (`Data`,Hora,NumeroMesa,TaxaTransp,formapgto,troco,enviado,DataEntrega,HoraEntrega,nome,endereco,numero,complemento,bairro,cidade,UF,telefone,gravado,tipo,chave,Obs,origem)
+
+        VALUES
+
+        ('$data','$hora',$mesa,$taxa,'$form',$troc," . 'null' . ",'$dataagendamento','$horaagendamento','$nome','$ende','$nume','$comp','$bair','$cida','$esta','$fone','$grav','$forma','$chav', '$obsgeral',$origem')
+
+      ");
+
+      } else {
+
+
+
+        $sql = $this->pdo->prepare("
+
+        INSERT INTO vendas
+
+        (`Data`,Hora,NumeroMesa,TaxaTransp,formapgto,troco,enviado,nome,endereco,numero,complemento,bairro,cidade,UF,telefone,gravado,tipo,chave,Obs,origem)
+
+        VALUES
+
+        ('$data','$hora',$mesa,$taxa,'$form',$troc," . 'null' . ",'$nome','$ende','$nume','$comp','$bair','$cida','$esta','$fone','$grav','$forma','$chav','$obsgeral','$origem')
+
+      ");
+
+      }
+
+
+
+      if ($sql->execute()) {
+
+
+
+        $cmt = $this->pdo->prepare("COMMIT");
+
+        $cmt->execute();
+
+
+
+        $codVenda = $this->codVenda($chav);
+
+
+
+        foreach ($_SESSION['carrinho'] as $item => $produto) {
+
+
+
+          $keyprod = md5(microtime() . $produto['codproduto']);
+
+          $codprod = $produto['codproduto'];
+
+          $quant   = $produto['quantidade'];
+
+          $fracao  = $produto['fracao'];
+
+          $borda   = $produto['borda'];
+
+          $tamanho = $produto['tamanho'] == '-' || $produto['tamanho'] == '' ? 0 : $produto['tamanho'];
+
+          $venda   = $produto['valor'];
+
+          $descr   = $produto['descricao'];
+
+          $vItem   = $produto['quantidade'] * $produto['valor'];
+
+          $infor   = $produto['observacao'];
+
+          $iten = $item + 1;
+
+
+
+          // print_r($produto['tamanho']);
+
+          $sql = $this->pdo->prepare("
+
+            INSERT INTO vendasdet
+
+            (Item,CodMerc,CodVenda,Qtd,Valor,`Data`,Hora,Descricao,VlrItem,Observacao,Tamanho,Fracao,chave)
+
+            VALUES
+
+            ($iten,$codprod,$codVenda,$quant,$venda,'$data','$hora','$descr',$vItem,'$infor',$tamanho,'$fracao','$keyprod')
+
+          ");
+
+
+
+          // print_r($sql);exit;
+
+
+
+          if ($sql->execute()) {
+
+
+
+            $cmt = $this->pdo->prepare("COMMIT");
+
+            $cmt->execute();
+
+
+
+            $sql = $this->pdo->prepare("
+
+              SELECT * FROM vendasdet WHERE chave = '$keyprod'
+
+            ");
+
+
+
+            if ($sql->execute()) {
+
+
+
+              if ($sql->rowCount() && $_SESSION['carrinho'][$item]['complemento'] > 0) {
+
+
+
+                $codvendasdet = $sql->fetchAll(\PDO::FETCH_ASSOC)[0]['Codigo'];
+
+
+
+                for ($i = 0; $i < count($_SESSION['carrinho'][$item]['complemento']); $i++) {
+
+
+
+                  $idprodcomp = $_SESSION['carrinho'][$item]['complemento'][$i];
+
+                  $sql = $this->pdo->prepare("SELECT * FROM mercadorias WHERE Codigo = $idprodcomp");
+
+                  $sql->execute();
+
+
+
+                  $dadoscomp = $sql->fetchAll(\PDO::FETCH_ASSOC);
+
+
+
+                  $qtd = 1;
+
+                  $val = $dadoscomp[0]['Venda'];
+
+                  $chave = md5(microtime() . $idprodcomp);
+
+
+
+                  $sql = $this->pdo->prepare("
+
+                    INSERT INTO vendasdetcomp
+
+                    (idVendasDet,idProdComp,Qtd,Valor,borda,chave)
+
+                    VALUES
+
+                    ($codvendasdet,$idprodcomp,$qtd,$val,'N','$chave')
+
+                  ");
+
+
+
+                  $sql->execute();
+
+                }
+
+              }
+
+
+
+              if ($sql->rowCount() && !empty($_SESSION['carrinho'][$item]['borda'])) {
+
+
+
+                $codborda = $_SESSION['carrinho'][$item]['borda'];
+
+                $sql = $this->pdo->prepare("SELECT * FROM mercadorias WHERE Codigo = $codborda");
+
+                $sql->execute();
+
+
+
+                $dados = $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+                $bchave = md5(microtime() . $codborda . $nome);
+
+                $valorb = $dados['Venda'];
+
+
+
+                $sql = $this->pdo->prepare("
+
+                    INSERT INTO vendasdetcomp
+
+                    (idVendasDet,idProdComp,Qtd,Valor,borda,chave)
+
+                    VALUES
+
+                    ($codvendasdet,$codborda,1,$valorb,'S','$bchave')
+
+                ");
+
+
+
+                $sql->execute();
+
+              }
+
+            }
+
+          }
+
+        }
+
+
+
+        $totalsession = $_SESSION['total'];
+
+
+
+        $sql = $this->pdo->prepare("UPDATE vendas SET gravado = 'S',totalpedido = $totalsession WHERE chave = '$chav'");
+
+        if ($sql->execute()) {
+
+
+
+          // $cmt = $this->pdo->prepare("COMMIT");
+
+          // $cmt->execute();
+
+
+
+          unset($_SESSION['chave']);
+
+          unset($_SESSION['carrinho']);
+
+          echo "<script>
+
+          console.log('Olá');
+
+              alert('Pedido enviado com sucesso!');
+
+              location.href='../obrigado.php';
+
+            </script>
+
+          ";
+
+        }
+
+      }
+
+    } catch (PDOException $e) {
+
+
+
+      $nomelog = date("Y_m_d_H_i_s") . ".txt";
+
+      $arquivo = fopen($nomelog, 'w');
+
+      fwrite($arquivo, $e->getMessage());
+
+      fclose($arquivo);
+
+    }
+
+  }
+
+}
+
+
+
+$finalizar = new finalizar;
+
+if (count($_SESSION['carrinho']) > 0) {
+
+  $finalizar->concluir();
+
+} else {
+
+  echo "<script>location.href='../obrigado.php';</script>";
+
+}
+
+
+
+<?php
+
+// controllers/getpedidos.php
+
+
+
+require 'config.php';
+
+# display de erros #
+
+error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
+
+date_default_timezone_set("America/Fortaleza");
+
+
+
+# classe responsavel pela api #
+
+class pedidos extends conexao
+
+{
+
+
+
+  # seta os pedidos como enviado ao serem consumidos pela aplicação da retaguarda #
+
+  public function update()
+
+  {
+
+
+
+    try {
+
+
+
+      $hrs = date("Y-m-d H:i:s");
+
+      $sql = $this->pdo->prepare("UPDATE vendas SET enviado = '$hrs' WHERE isnull(enviado)");
+
+      $sql->execute();
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # converte data no formato exigido pela retaguarda #
+
+  public function convert($data)
+
+  {
+
+    return date("d-m-Y", strtotime($data));
+
+  }
+
+
+
+  # seleciona os pedidos pendentes para serem consumidos pela aplicação da retaguarda #
+
+  public function vendas()
+
+  {
+
+
+
+    $url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+
+    $partes = explode("php", $url);
+
+
+
+    if (strlen($partes[1]) > 0) {
+
+      $cd = substr($partes[1], 1, 100);
+
+      $sql = $this->pdo->prepare("SELECT * FROM vendas WHERE Codigo = $cd");
+
+    } else {
+
+      $sql = $this->pdo->prepare("SELECT * FROM vendas WHERE isnull(enviado)");
+
+    }
+
+
+
+    try {
+
+
+
+      $sql->execute();
+
+
+
+      foreach ($sql->fetchAll(\PDO::FETCH_ASSOC) as $dados) {
+
+
+
+        $array[] = [
+
+          "codigo" => intval($dados['Codigo']),
+
+          "data" => $this->convert($dados['Data']),
+
+          "hora" => $dados['Hora'],
+
+          "troco" => strtr($dados['troco'], ".", ","),
+
+          "nome" => utf8_encode($dados['nome']),
+
+          "endereco" => utf8_encode($dados['endereco']),
+
+          "numero" => $dados['numero'],
+
+          "bairro" => utf8_encode($dados['bairro']),
+
+          "cidade" => utf8_encode($dados['cidade']),
+
+          "uf" => $dados['UF'],
+
+          "enviado" => '',
+
+          "taxatransp" => strtr($dados['TaxaTransp'], ".", ","),
+
+          "formapgto" => $dados['formapgto'],
+
+          "obs" => $dados['Obs'] ? $dados['Obs'] : "",
+
+          "telefone" => $dados['telefone'],
+
+          "complemento" => $dados['complemento'],
+
+          "tipo" => $dados['tipo'],
+
+          "md5" => $dados['chave'],
+
+          "dataentrega" => $dados['DataEntrega'] ? $dados['DataEntrega'] : "",
+
+          "horaentrega" => $dados['HoraEntrega'] ? $dados['HoraEntrega'] : "",
+
+          "numeromesa" => intval($dados['NumeroMesa']),
+
+          "itens" => $this->itens($dados['Codigo'])
+
+        ];
+
+      }
+
+
+
+      // $sql->rowCount() ? print_r(json_encode($array)) : [];
+
+      if ($sql->rowCount()) {
+
+        $vendas = ["vendas" => $array];
+
+      } else {
+
+        $vendas = json_decode('{}');
+
+      }
+
+
+
+      $datahora = date("Y-m-d H:i:s");
+
+
+
+      if (print_r(json_encode($vendas))) {
+
+        $sql = $this->pdo->prepare("UPDATE vendas SET enviado = '$datahora'");
+
+        $sql->execute();
+
+      }
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # seleciona os itens pendentes de uma venda #
+
+  public function itens($cod)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("SELECT * FROM vendasdet WHERE CodVenda = $cod");
+
+      $sql->execute();
+
+
+
+      foreach ($sql->fetchAll(\PDO::FETCH_ASSOC) as $dados) {
+
+
+
+        $temcomp = count($this->comps($dados['Codigo']));
+
+
+
+        if ($temcomp > 0) {
+
+
+
+          $item[] = [
+
+            "qtd" => intval($dados['Qtd']),
+
+            "valor" => strtr(number_format($dados['Valor'], 2, '.', ''), ".", ","),
+
+            "hora" => $dados['Hora'],
+
+            "vlritem" => strtr($dados['VlrItem'], ".", ","),
+
+            "descricao" => utf8_encode($dados['Descricao']),
+
+            "codigo" => $dados['Codigo'],
+
+            "codmerc" => intval($dados['CodMerc']),
+
+            "item" =>   intval($dados['Item']),
+
+            "codvenda" => intval($dados['CodVenda']),
+
+            "data" => date("d-m-Y", strtotime($dados['Data'])),
+
+            "obs" => $dados['Observacao'],
+
+            "md5" => $dados['chave'],
+
+            "complementos" => $this->comps($dados['Codigo'])
+
+          ];
+
+        } else {
+
+
+
+          $item[] = [
+
+            "qtd" => intval($dados['Qtd']),
+
+            "valor" => strtr($dados['Valor'], ".", ","),
+
+            "hora" => $dados['Hora'],
+
+            "vlritem" => strtr($dados['VlrItem'], ".", ","),
+
+            "descricao" => utf8_encode($dados['Descricao']),
+
+            "codigo" => $dados['Codigo'],
+
+            "codmerc" => intval($dados['CodMerc']),
+
+            "item" =>   intval($dados['Item']),
+
+            "codvenda" => intval($dados['CodVenda']),
+
+            "data" => date("d-m-Y", strtotime($dados['Data'])),
+
+            "obs" => $dados['Observacao'],
+
+            "md5" => $dados['chave'],
+
+          ];
+
+        }
+
+      }
+
+
+
+      return $item;
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  # seleciona os complementos de um determinado item #
+
+  public function comps($cod)
+
+  {
+
+
+
+    try {
+
+
+
+      $item = [];
+
+      $sql = $this->pdo->prepare("SELECT * FROM vendasdetcomp WHERE idVendasDet = $cod");
+
+      $sql->execute();
+
+
+
+      foreach ($sql->fetchAll(\PDO::FETCH_ASSOC) as $dados) {
+
+
+
+        $comp = [
+
+          "codigo" => intval($dados['ID']),
+
+          "idvendasdet" => intval($dados['idVendasDet']),
+
+          "idcodmerc" => intval($dados['idProdComp']),
+
+          "qtd" => intval($dados['Qtd']),
+
+          "valor" => intval($dados['Valor']),
+
+          "md5" => $dados['chave']
+
+        ];
+
+
+
+        array_push($item, $comp);
+
+      }
+
+
+
+      return $item;
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+}
+
+
+
+$pedidos = new pedidos;
+
+$pedidos->vendas();
+
+
+
+<?php
+
+// controllers/ingredientes.php
+
+
+
+require 'config.php';
+
+
+
+class ingredientes extends conexao
+
+{
+
+
+
+  public function getingredientes($cod)
+
+  {
+
+    $sql = $this->pdo->prepare("SELECT ingredientes FROM mercadorias WHERE Codigo = $cod");
+
+    $sql->execute();
+
+
+
+    $data = $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+    print_r(json_encode($data));
+
+  }
+
+}
+
+
+
+if (isset($_GET['cod']) && !empty($_GET['cod'])) {
+
+  $ingredientes = new ingredientes;
+
+  $ingredientes->getingredientes($_GET['cod']);
+
+}
+
+
+
+<?php
+
+// controllers/loja.php
+
+
+
+class loja extends conexao
+
+{
+
+
+
+  public function mudarstatus($tipo)
+
+  {
+
+
+
+    if ($tipo == 'fechar') {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          UPDATE parametros SET aberto = 'N'
+
+        ");
+
+      $sql->execute();
+
+    }
+
+
+
+    if ($tipo == 'abrir') {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          UPDATE parametros SET aberto = 'S'
+
+        ");
+
+      $sql->execute();
+
+    }
+
+  }
+
+
+
+  public function statusLoja()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT parametros.aberto FROM parametros");
+
+    $sql->execute();
+
+
+
+    $situacao = $sql->fetchAll(\PDO::FETCH_ASSOC)[0]['aberto'];
+
+
+
+    if ($situacao == 'S') {
+
+      echo "<a href='?fechar'>Fechar Loja</a>";
+
+    } else {
+
+      echo "<a href='?abrir'>Abrir Loja</a>";
+
+    }
+
+  }
+
+}
+
+
+
+$loja = new loja;
+
+
+
+<?php
+
+// controllers/montapizza.php
+
+
+
+require 'config.php';
+
+
+
+class pizza extends conexao
+
+{
+
+
+
+  public function simples($convertido)
+
+  {
+
+
+
+    $array = [
+
+      "codproduto" => $convertido[0]->dados->Codigo,
+
+      "descricao"  => $convertido[0]->dados->Descricao,
+
+      "quantidade" => $convertido[0]->quant,
+
+      "tamanho" => '',
+
+      "detalhestamanho" => '',
+
+      "fracao" => '',
+
+      "borda"  => '',
+
+      "observacao" => $convertido[0]->dados->Observacao,
+
+      "valor" => $convertido[0]->dados->Venda,
+
+      "complemento" => $convertido[0]->comps
+
+    ];
+
+
+
+    $_SESSION['carrinho'][] = $array;
+
+  }
+
+
+
+  public function pizzaria($convertido)
+
+  {
+
+
+
+    $codproduto = $convertido[0]->dados->Codigo;
+
+    $tamanho    = $convertido[0]->detalhestamanho;
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT tamanhos.Valor, tamanhos.Sabores FROM tamanhos
+
+        WHERE CodMerc = $codproduto AND Tamanho = '$tamanho'
+
+      ");
+
+
+
+    $sql->execute();
+
+
+
+    $valor = $sql->fetchAll(\PDO::FETCH_ASSOC)[0]['Valor'];
+
+
+
+    $array = [
+
+      "codproduto" => $convertido[0]->dados->Codigo,
+
+      "descricao"  => $convertido[0]->dados->Descricao,
+
+      "quantidade" => $convertido[0]->fracao == 'meia' ? 1 : $convertido[0]->quant,
+
+      "tamanho" => $convertido[0]->tamanho,
+
+      "detalhestamanho" => $convertido[0]->detalhestamanho,
+
+      "fracao" => $convertido[0]->fracao,
+
+      "borda"  => $convertido[0]->borda,
+
+      "observacao" => $convertido[0]->dados->Observacao,
+
+      "valor"  => $convertido[0]->fracao == 'inteira' ? $valor : $valor / 2,
+
+      "complemento" => $convertido[0]->comps,
+
+      "key" => $convertido[0]->key
+
+    ];
+
+
+
+    $_SESSION['carrinho'][] = $array;
+
+  }
+
+}
+
+
+
+$pizzaria = new pizza;
+
+
+
+if (isset($_GET['produto']) && is_numeric($_GET['tipo'])) {
+
+
+
+  # para montar itens #
+
+  if ($_GET['tipo'] == 1) {
+
+
+
+    $convertido = json_decode($_GET['produto']);
+
+    $pizzaria->simples($convertido);
+
+  }
+
+
+
+  # para montar pizza #
+
+  if ($_GET['tipo'] == 0) {
+
+
+
+    $convertido = json_decode($_GET['produto']);
+
+    $pizzaria->pizzaria($convertido);
+
+  }
+
+}
+
+
+
+<?php
+
+// controllers/obsgeral.php
+
+
+
+// require_once 'config.php';
+
+
+
+if (isset($_GET['obs'])) {
+
+  session_start();
+
+  $_SESSION['obsgeral'] = $_GET['obs'];
+
+}
+
+
+
+// class obsgeral extends conexao
+
+// {
+
+//  public function __construct()
+
+//  {
+
+//    parent::__construct();
+
+//  }
+
+
+
+//  public function inserirObs($obs)
+
+//  {
+
+//    $obs = $_GET['obs'];
+
+//    $stmt = $this->pdo->prepare("INSERT INTO vendasdet (Observacao) VALUES ('$obs')");
+
+//    $stmt->bindParam(":obs", $obs);
+
+
+
+//    if ($stmt->execute()) {
+
+//      echo "Observação inserida com sucesso";
+
+//    } else {
+
+//      echo "ERRO: " . $stmt->errorInfo()[2];
+
+//    }
+
+//  }
+
+// }
+
+
+
+// $obsgeral = new obsgeral();
+
+// $obs = $_GET['obs'];
+
+// $obsgeral->inserirObs($obs);
+
+<?php
+
+// controllers/pedidos.php
+
+
+
+class pedidos extends conexao
+
+{
+
+
+
+  public function getPedidos()
+
+  {
+
+
+
+    $fone = $_SESSION['fone'];
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT Data,Hora,totalpedido,Codigo FROM vendas
+
+        WHERE telefone = $fone
+
+        ORDER BY Codigo DESC
+
+      ");
+
+
+
+    $sql->execute();
+
+
+
+    if ($sql->rowCount()) {
+
+
+
+      return $sql->fetchAll(\PDO::FETCH_ASSOC);
+
+    }
+
+  }
+
+
+
+  public function viewPedido($cod)
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT * FROM vendas
+
+        WHERE Codigo = $cod
+
+      ");
+
+
+
+    $sql->execute();
+
+
+
+    if ($sql->rowCount()) {
+
+
+
+      # dados da venda #
+
+      $cabecalho = $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+      $_SESSION['viewpedido'] = $cabecalho;
+
+
+
+      # produtos da venda #
+
+      $vds = $this->pdo->prepare("
+
+          SELECT * FROM vendasdet
+
+          WHERE CodVenda = $cod
+
+        ");
+
+      $vds->execute();
+
+
+
+      foreach ($vds->fetchAll(\PDO::FETCH_ASSOC) as $prods) {
+
+
+
+        $codvendas = $prods['Codigo'];
+
+
+
+        # complementos referente ao produto #
+
+        $det = $this->pdo->prepare("
+
+            SELECT * FROM vendasdetcomp
+
+            WHERE idVendasDet = $codvendas
+
+          ");
+
+        $det->execute();
+
+
+
+        if ($det->rowCount()) {
+
+
+
+          $complementos = $det->fetchAll(\PDO::FETCH_ASSOC);
+
+
+
+          foreach ($complementos as $value) {
+
+
+
+            $idcomp = $value['idProdComp'];
+
+
+
+            $comp = $this->pdo->prepare("
+
+                SELECT Descricao FROM mercadorias
+
+                WHERE Codigo = $idcomp
+
+              ");
+
+            $comp->execute();
+
+
+
+            foreach ($comp->fetchAll(\PDO::FETCH_ASSOC) as $montacomp) {
+
+
+
+              $comps[] = [
+
+                "Descricao" => $montacomp['Descricao'],
+
+                "Quantidade" => $value['Qtd'],
+
+                "Venda" => $value['Valor']
+
+              ];
+
+            }
+
+          }
+
+        } else {
+
+
+
+          $comps = [];
+
+        }
+
+
+
+        $array[] = [
+
+          "Codigo" => $prods['CodMerc'],
+
+          "Descricao" => $prods['Descricao'],
+
+          "Quantidad" => $prods['Qtd'],
+
+          "Valor" => $prods['VlrItem'],
+
+          "Complemento" => $comps
+
+        ];
+
+
+
+        $comps = [];
+
+      }
+
+
+
+      return $array;
+
+    }
+
+  }
+
+
+
+  public function filterPedido($inicio, $fim, $tipo)
+
+  {
+
+
+
+    if ($tipo == 'todos') {
+
+
+
+      $sql = $this->pdo->prepare("
+
+        SELECT * FROM vendas WHERE `data` >= '$inicio' AND `data` <= '$fim' ORDER BY `data` DESC
+
+      ");
+
+    } elseif ($tipo == 'delivery') {
+
+
+
+      $sql = $this->pdo->prepare("
+
+        SELECT * FROM vendas WHERE `data` >= '$inicio' AND `data` <= '$fim' AND NumeroMesa = 0 ORDER BY `data` DESC
+
+      ");
+
+    } elseif ($tipo == 'qr') {
+
+
+
+      $sql = $this->pdo->prepare("
+
+        SELECT * FROM vendas WHERE `data` >= '$inicio' AND `data` <= '$fim' AND NumeroMesa > 0 ORDER BY `data` DESC
+
+      ");
+
+    }
+
+
+
+    $sql->execute();
+
+
+
+    if ($sql->rowCount()) {
+
+
+
+      echo "<div class='row'>
+
+          <div class='cliente'>CLIENTE</div>
+
+          <div class='valor'>VALOR</div>
+
+          <div class='enviado' style='text-align: center'>STATUS</div>
+
+        </div>";
+
+
+
+      $total = 0;
+
+      $cod = 0;
+
+
+
+      foreach ($sql->fetchAll(\PDO::FETCH_ASSOC) as $dados) {
+
+
+
+        $cod = $cod + 1;
+
+        $total += $dados['totalpedido'];
+
+
+
+        echo "<div class='row'>";
+
+
+
+        echo "<div class='cod'>" . $cod . "</div>";
+
+
+
+        echo "<div class='cliente'>" . $dados['nome'] . "</div>";
+
+
+
+        echo "<div class='valor'>" . $dados['totalpedido'] . "</div>";
+
+
+
+        if (is_null($dados['enviado'])) {
+
+
+
+          echo "<div class='enviado'>PENDENTE</div>";
+
+        } else {
+
+
+
+          echo "<div class='enviado'>";
+
+          $pedacos = explode(' ', $dados['enviado']);
+
+          echo date("d/m/Y", strtotime($pedacos[0])) . " " . $pedacos[1];
+
+          echo "</div>";
+
+        }
+
+
+
+        echo "</div>";
+
+      }
+
+
+
+      echo "<div class='qtdpedidos'>" . $cod . "</div>";
+
+    }
+
+  }
+
+}
+
+
+
+$pedidos = new pedidos;
+
+
+
+<?php
+
+// controllers/produtos.php
+
+
+
+require 'config.php';
+
+
+
+class produtos extends conexao
+
+{
+
+
+
+  public function readAll()
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("
+
+        SELECT grupo.Descricao AS Grupo,grupo.FecharCozinha,categorias.descricao AS categoria, categorias.pizza, mercadorias.* FROM mercadorias
+
+        INNER JOIN grupo ON (mercadorias.idgrupo = grupo.Codigo)
+
+        INNER JOIN categorias ON (grupo.idcategoria = categorias.id)
+
+        WHERE complemento = 'N' AND mercadorias.ativo = 'S' AND mercadorias.delivery = 'S'
+
+        ORDER BY categorias.Ordem ASC
+
+        ");
+
+
+
+      $sql->execute();
+
+
+
+      $dados = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC) : [];
+
+
+
+      print_r(json_encode($dados));
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  public function cozinha()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT grupo.FecharCozinha FROM grupo");
+
+    $sql->execute();
+
+
+
+    print_r(json_encode($sql->fetchAll(\PDO::FETCH_ASSOC)[0]));
+
+  }
+
+
+
+  public function dadostamanhos($cod)
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT * FROM tamanhos WHERE CodMerc = $cod");
+
+    $sql->execute();
+
+
+
+    print_r(json_encode($sql->fetchAll(\PDO::FETCH_ASSOC)));
+
+  }
+
+
+
+  public function dadostam($cod)
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT * FROM tamanhos WHERE Codigo = $cod");
+
+    $sql->execute();
+
+
+
+    return $sql->fetchAll(\PDO::FETCH_ASSOC)[0]['Tamanho'];
+
+  }
+
+
+
+  public function read($cod)
+
+  {
+
+
+
+    try {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          SELECT grupo.Descricao,grupo.TextoAdicional,grupo.AtivaTextoAdicional AS adicional,categorias.pizza,categorias.descricao,mercadorias.* FROM mercadorias
+
+          INNER JOIN grupo ON (mercadorias.idgrupo = grupo.Codigo)
+
+          INNER JOIN categorias ON (grupo.idcategoria = categorias.id)
+
+          WHERE mercadorias.Codigo = $cod AND complemento = 'N' AND mercadorias.ativo = 'S'
+
+        ");
+
+      $sql->execute();
+
+
+
+      $dados = $sql->rowCount() ? $sql->fetch(\PDO::FETCH_ASSOC) : [];
+
+
+
+      print_r(json_encode($dados));
+
+    } catch (PDOException $e) {
+
+
+
+      echo $e->getMessage();
+
+    }
+
+  }
+
+
+
+  public function marmitas()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT * FROM marmitas
+
+      ");
+
+
+
+    $sql->execute();
+
+    $marmita = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC) : [];
+
+    return $marmita;
+
+  }
+
+
+
+  public function tamanhos($cod)
+
+  {
+
+
+
+    if ($cod != '') {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          SELECT * FROM tamanhos WHERE CodMerc = $cod
+
+        ");
+
+    } else {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          SELECT * FROM tamanhos
+
+        ");
+
+    }
+
+
+
+    $sql->execute();
+
+    $tamanhos = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC) : [];
+
+    return $tamanhos;
+
+  }
+
+
+
+  public function bordas()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT mercadorias.Codigo,mercadorias.Descricao,mercadorias.Venda FROM mercadorias WHERE ComplementoBorda = 'S'
+
+      ");
+
+
+
+    $sql->execute();
+
+    $bordas = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC) : [];
+
+    print_r(json_encode($bordas));
+
+  }
+
+
+
+  public function paraimagem()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT * FROM mercadorias WHERE ativo = 'S' AND complemento = 'N'
+
+      ");
+
+    $sql->execute();
+
+
+
+    if ($sql->rowCount()) {
+
+
+
+      foreach ($sql->fetchAll(\PDO::FETCH_ASSOC) as $value) {
+
+        echo "<option value='" . $value['Codigo'] . "'>" . $value['Descricao'] . "</option>";
+
+      }
+
+    }
+
+  }
+
+
+
+  public function qtdcombo($cod)
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT QuantidadeCombo FROM mercadorias WHERE Codigo = $cod
+
+      ");
+
+    $sql->execute();
+
+
+
+    return $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+  }
+
+}
+
+
+
+$produtos = new produtos;
+
+
+
+if (isset($_GET['all']) && empty($_GET['all'])) {
+
+  $produtos->readAll();
+
+}
+
+
+
+if (isset($_GET['coz']) && empty($_GET['coz'])) {
+
+  $produtos->cozinha();
+
+}
+
+
+
+if (isset($_GET['getprod']) && is_numeric($_GET['getprod'])) {
+
+  $produtos->read($_GET['getprod']);
+
+}
+
+
+
+if (isset($_GET['tamanhos']) && is_numeric($_GET['tamanhos'])) {
+
+  $produtos->dadostamanhos($_GET['tamanhos']);
+
+}
+
+
+
+if (isset($_GET['bordas']) && empty($_GET['bordas'])) {
+
+  $produtos->bordas();
+
+}
+
+
+
+<?php
+
+// controllers/relatorioperiodo.php
+
+
+
+require 'config.php';
+
+
+
+class relatorio extends conexao
+
+{
+
+
+
+  public function filter($inicio, $fim)
+
+  {
+
+
+
+    if (isset($inicio) && !empty($fim)) {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          SELECT * FROM vendas WHERE data >= '$inicio' AND data <= '$fim' ORDER BY data DESC
+
+        ");
+
+    } elseif (isset($inicio) && empty($fim)) {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          SELECT * FROM vendas WHERE data >= '$inicio' ORDER BY data DESC
+
+        ");
+
+    } elseif (empty($inicio) && empty($fim)) {
+
+
+
+      $sql = $this->pdo->prepare("
+
+          SELECT * FROM vendas ORDER BY data DESC
+
+        ");
+
+    }
+
+
+
+    $sql->execute();
+
+
+
+    if ($sql->rowCount()) {
+
+
+
+      echo '
+
+          <div class="row details">
+
+            <div class="name">
+
+              Cliente
+
+            </div>
+
+            <div class="price">
+
+              Valor
+
+            </div>
+
+            <div class="info">
+
+              Enviado
+
+            </div>
+
+          </div>
+
+        ';
+
+
+
+      foreach ($sql->fetchAll() as $dados) {
+
+
+
+        echo '
+
+            <div class="row">
+
+              <div class="name">
+
+                ' . $dados['nome'] . '
+
+              </div>
+
+              <div class="price">
+
+                ' . number_format($dados['totalpedido'], 2, '.', '') . '
+
+              </div>
+
+              <div class="info">';
+
+
+
+        if (is_null($dados['enviado'])) {
+
+          echo "Pendente";
+
+        } else {
+
+          echo $dados['enviado'];
+
+        }
+
+
+
+        echo '</div>
+
+            </div>
+
+
+
+          ';
+
+      }
+
+    }
+
+  }
+
+}
+
+
+
+$relatorio = new relatorio;
+
+
+
+if (isset($_GET['inicio']) && isset($_GET['fim'])) {
+
+  $relatorio->filter($_GET['inicio'], $_GET['fim']);
+
+} else {
+
+  $relatorio->filter('', '');
+
+}
+
+
+
+<?php
+
+// controllers/utilitarios.php
+
+
+
+class uteis extends conexao
+
+{
+
+
+
+  public function status()
+
+  {
+
+
+
+    date_default_timezone_set("America/Fortaleza");
+
+    $textodia = array("DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB");
+
+    $day = $textodia[date('w')];
+
+
+
+    $sql = $this->pdo->prepare("
+
+        SELECT * FROM horarios
+
+        INNER JOIN parametros ON (horarios.idParam = parametros.id)
+
+        WHERE dia = '$day'
+
+      ");
+
+    $sql->execute();
+
+
+
+    $dados = $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC)[0] : [];
+
+
+
+    $atual = date("H:i:s");
+
+
+
+    if (strlen($_SESSION['fone']) > 10) {
+
+
+
+      if ($dados['fechamento'] < $dados['abertura']) {
+
+
+
+        if ($atual < $dados['fechamento'] || $atual > $dados['abertura'] && $dados['aberto'] == 'S') {
+
+
+
+          return $status = array(
+
+            "status" => "aberto",
+
+            "preparo" => $dados['tempoentrega'],
+
+            "taxa" => $dados['txentrega'],
+
+            "tempo" => $dados['tempoentrega'],
+
+            "entrega" => $dados['ativaentrega'],
+
+            "abertura" => $dados['abertura'],
+
+            "fechamento" => $dados['fechamento']
+
+          );
+
+
+
+          session_start();
+
+          $_SESSION['status'] = "aberto";
+
+        } else {
+
+
+
+          return $status = array(
+
+            "status" => "fechado",
+
+            "preparo" => $dados['tempoentrega'],
+
+            "taxa" => $dados['txentrega'],
+
+            "tempo" => $dados['tempoentrega'],
+
+            "entrega" => $dados['ativaentrega'],
+
+            "abertura" => $dados['abertura'],
+
+            "fechamento" => $dados['fechamento']
+
+          );
+
+
+
+          session_start();
+
+          $_SESSION['status'] = "fechado";
+
+        }
+
+      } elseif ($atual > $dados['abertura'] && $atual < $dados['fechamento'] && $dados['aberto'] == 'S') {
+
+
+
+        return $status = array(
+
+          "status" => "aberto",
+
+          "preparo" => $dados['tempoentrega'],
+
+          "taxa" => $dados['txentrega'],
+
+          "tempo" => $dados['tempoentrega'],
+
+          "entrega" => $dados['ativaentrega'],
+
+          "abertura" => $dados['abertura'],
+
+          "fechamento" => $dados['fechamento']
+
+        );
+
+
+
+        session_start();
+
+        $_SESSION['status'] = "aberto";
+
+      } else {
+
+
+
+        return $status = array(
+
+          "status" => "fechado",
+
+          "preparo" => $dados['tempoentrega'],
+
+          "taxa" => $dados['txentrega'],
+
+          "tempo" => $dados['tempoentrega'],
+
+          "entrega" => $dados['ativaentrega'],
+
+          "abertura" => $dados['abertura'],
+
+          "fechamento" => $dados['fechamento']
+
+        );
+
+
+
+        session_start();
+
+        $_SESSION['status'] = "fechado";
+
+      }
+
+    } else {
+
+
+
+      return $status = array(
+
+        "status" => "aberto",
+
+        "preparo" => $dados['tempoentrega'],
+
+        "taxa" => $dados['txentrega'],
+
+        "tempo" => $dados['tempoentrega'],
+
+        "entrega" => $dados['ativaentrega'],
+
+        "abertura" => $dados['abertura'],
+
+        "fechamento" => $dados['fechamento']
+
+      );
+
+
+
+      session_start();
+
+      $_SESSION['status'] = "aberto";
+
+    }
+
+  }
+
+
+
+  public function recuperaImagem($produto)
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT imagem FROM mercadorias WHERE Codigo = $produto");
+
+    $sql->execute();
+
+
+
+    $dados = $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+
+
+    if (is_null($dados['imagem'])) {
+
+      echo "<img src='https://serraazul.sp.gov.br/lib/img/no-image.jpg'>";
+
+    } else {
+
+      echo "<img src='img/" . $dados['imagem'] . "'>";
+
+    }
+
+  }
+
+
+
+  public function logado()
+
+  {
+
+
+
+    if (!isset($_SESSION['fone'])) {
+
+
+
+      echo "
+
+          <script>
+
+             alert('Ops! faça login para continuar!');
+
+             location.href='validate.php';
+
+           </script>
+
+          ";
+
+    }
+
+  }
+
+
+
+  public function agenda()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT * FROM parametros");
+
+    $sql->execute();
+
+
+
+    return $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC)[0]['AgendaPedido'] : [];
+
+  }
+
+
+
+  public function cidade()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT * FROM cidades WHERE excluido = 'N'");
+
+    $sql->execute();
+
+
+
+    return $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC) : [];
+
+  }
+
+
+
+  public function retornaCidade($cod)
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT * FROM cidades WHERE Codigo = $cod");
+
+    $sql->execute();
+
+
+
+    return $sql->rowCount() ? $sql->fetchAll(\PDO::FETCH_ASSOC)[0]['Descricao'] : [];
+
+  }
+
+
+
+  public function meusEnderecos()
+
+  {
+
+
+
+    $fone = $_SESSION['fone'];
+
+
+
+    $sql  = $this->pdo->prepare("
+
+        SELECT DISTINCT endereco,numero,bairro FROM vendas WHERE telefone='$fone'
+
+      ");
+
+
+
+    $sql->execute();
+
+
+
+    if ($sql->rowCount()) {
+
+
+
+      echo "<select class='meusenderecos'>";
+
+      echo "<option value=''>Meus Endereços</option>";
+
+
+
+      foreach ($sql->fetchAll(\PDO::FETCH_ASSOC) as $value) {
+
+
+
+        echo "<option value='" . $value['endereco'] . "-" . $value['numero'] . "-" . $value['bairro'] . "'>" . $value['endereco'] . "," . $value['numero'] . " - " . $value['bairro'] . "</option>";
+
+      }
+
+
+
+      echo "</select>";
+
+    }
+
+  }
+
+
+
+  public function PedidosDashboard($inicio, $fim)
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT * FROM vendas WHERE Data >= '$inicio' AND Data <= '$fim'");
+
+    $sql->execute();
+
+
+
+    if ($sql->rowCount()) {
+
+
+
+      return $sql->fetchAll(\PDO::FETCH_ASSOC);
+
+    } else {
+
+
+
+      return [];
+
+    }
+
+  }
+
+
+
+  // public function qrcode()
+
+  // {
+
+
+
+  //  if (strlen($_SESSION['fone']) < 10) {
+
+
+
+  //    $mesa = $_SESSION['fone'];
+
+  //    $sql = $this->pdo->prepare("SELECT * FROM mesas WHERE Mesa = $mesa");
+
+  //    $sql->execute();
+
+
+
+  //    if ($sql->rowCount()) {
+
+
+
+  //      $dados = $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+
+
+  //      if ($dados['Fechado'] == 'S') {
+
+
+
+  //        $upt = $this->pdo->prepare("UPDATE mesas SET Fechado = 'N' WHERE mesa = $mesa");
+
+  //        $upt->execute();
+
+
+
+  //        if ($upt) {
+
+  //          session_destroy();
+
+  //        }
+
+  //      }
+
+  //    }
+
+  //  }
+
+  // }
+
+
+
+  public function todosHorarios()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT * FROM horarios");
+
+    $sql->execute();
+
+
+
+    return $dados = $sql->fetchAll(\PDO::FETCH_ASSOC);
+
+  }
+
+
+
+  public function temposessao()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT parametros.tempolimparsessao FROM parametros");
+
+    $sql->execute();
+
+
+
+    return $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+  }
+
+
+
+  public function exigirNome()
+
+  {
+
+
+
+    $sql = $this->pdo->prepare("SELECT qrcodecomnome FROM parametros");
+
+    $sql->execute();
+
+
+
+    return $sql->fetchAll(\PDO::FETCH_ASSOC)[0];
+
+  }
+
+}
+
+
+
+$uteis = new uteis;
+
+// $uteis ->logado();
+
+// $uteis->qrcode();
+
+Se fosse você quem estivesse refazendo tudo isso, quais classes você uniria para evitar possíveis repetições de queries, o que pode ser limpo numa renovação desse projeto, o que pode ser feito para isso se tornar mais vantajoso?
+
+conexao.php
+
+gerenciador_vendas.php
+
+servico_produtos.php
+
+servico_configuracoes.php
+
+utilidades.php
+
+api.php
+
+finalizar_pedido.php
+
+Você faria essa renovação de backend devolvendo HTML ou JSON?
+
+
+Excelente pergunta. A decisão entre devolver HTML ou JSON é fundamental para o sucesso de um projeto moderno.
+
+Eu faria a renovação do backend para devolver apenas JSON.
+
+Por que JSON é a melhor escolha?
+Separação de Responsabilidades:
+
+O backend se torna uma API (Interface de Programação de Aplicações) limpa, focada apenas em processar dados e lógica de negócio (salvar pedidos, buscar produtos, etc.).
+
+A apresentação (o visual, o HTML) é movida para o frontend (seja uma aplicação em JavaScript como Vue, React, ou mesmo um frontend tradicional).
+
+Flexibilidade:
+
+Com uma API que devolve JSON, seu sistema não fica preso a um único tipo de cliente. Ele poderia ser consumido por um site, um aplicativo móvel (Android/iOS), ou até mesmo um painel de controle para gerentes.
+
+O código que você me mostrou tem várias chamadas echo misturadas com a lógica da classe (echo "<div class='row'>...</div>"). Isso amarra a lógica de negócios diretamente à forma como os dados são exibidos, tornando impossível reutilizá-la.
+
+Melhor Desempenho (em casos específicos):
+
+Se o frontend já é uma aplicação de página única (SPA), carregar apenas dados via JSON é muito mais rápido do que recarregar a página inteira com HTML a cada interação.
+
+A transferência de dados em JSON é, em geral, mais leve do que a de HTML, economizando largura de banda.
+
+Quando devolveria HTML?
+A devolução de HTML direto do backend ainda é uma boa opção em sistemas mais simples ou em projetos que usam tecnologias como Blade (Laravel), Twig (Symfony) ou PHP puro para renderização de páginas completas. No entanto, para um sistema de pedidos com interações dinâmicas, como o seu, a abordagem com JSON é mais profissional e escalável.
+
+Resumindo, a forma mais vantajosa de refazer o seu projeto, pensando no futuro, é transformá-lo em uma API que devolve JSON. As classes que criamos (gerenciador_vendas.php, servico_produtos.php) serão perfeitas para isso, pois retornarão arrays que o arquivo api.php converterá em JSON.
