@@ -33,8 +33,8 @@ class Conexao
   }
 }
 
-try {
-  $conexao = Conexao::instancia();
-} catch (Exception $e) {
-  die($e->getMessage());
-}
+// try {
+//   $conexao = Conexao::instancia();
+// } catch (Exception $e) {
+//   die($e->getMessage());
+// }

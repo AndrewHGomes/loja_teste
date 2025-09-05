@@ -1,5 +1,7 @@
 <?php
 
+ob_start();
+
 require_once 'session_init.php';
 require_once 'Conexao.php';
 require_once 'Empresa.php';
@@ -56,4 +58,5 @@ try {
   echo json_encode(['message' => 'Ocorreu um erro interno.']);
 }
 
+ob_end_flush();
 exit;

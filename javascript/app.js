@@ -167,10 +167,10 @@ async function gerenciarAside() {
 
   const abertoFechado = capturar(".fechado-aberto");
   if (abertoFechado) {
-    abertoFechado.textContent =
+    abertoFechado.innerHTML =
       statusEmpresa.aberto === "S"
-        ? "ESTAMOS [ ABERTOS ]"
-        : "ESTAMOS [ FECHADOS ]";
+        ? "<i class='fa-solid fa-door-open'></i> ESTAMOS [ ABERTOS ]"
+        : "<i class='fa-solid fa-door-closed'></i> ESTAMOS [ FECHADOS ]";
 
     abertoFechado.style.color = statusEmpresa.aberto === "S" ? "#080" : "#c00";
   }

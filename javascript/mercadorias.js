@@ -4,6 +4,7 @@ export async function carregarMercadorias() {
   const objMercadorias = await apiGet("mercadorias");
 
   if (objMercadorias && objMercadorias.length > 0) {
+    console.log(objMercadorias);
     return objMercadorias;
   }
 
