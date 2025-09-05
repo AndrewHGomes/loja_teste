@@ -1,34 +1,11 @@
-import { repassarDados } from "./api.js";
+import { apiGet } from "./api.js";
 
 export async function carregarEmpresa() {
-  const objEmpresa = await repassarDados("empresa");
+  const objEmpresa = await apiGet("empresa");
 
   if (objEmpresa && objEmpresa.length > 0) {
-    const {
-      Fantasia,
-      Telefone,
-      Cidade,
-      aberto,
-      tempoentrega,
-      ativaentrega,
-      Endereco,
-      Bairro,
-      Numero,
-      TempoPreparo,
-    } = objEmpresa[0];
-
-    return {
-      Fantasia,
-      Telefone,
-      Cidade,
-      aberto,
-      tempoentrega,
-      ativaentrega,
-      Endereco,
-      Bairro,
-      Numero,
-      TempoPreparo,
-    };
+    console.log(objEmpresa[0]);
+    return objEmpresa[0];
   }
 
   return [];

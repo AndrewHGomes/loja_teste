@@ -1,7 +1,7 @@
-import { repassarDados } from "./api.js";
+import { apiGet } from "./api.js";
 
 export async function carregarStatus() {
-  const objStatus = await repassarDados("status");
+  const objStatus = await apiGet("status");
 
   if (objStatus && objStatus.length > 0) {
     return objStatus[0];

@@ -30,7 +30,7 @@ class Empresa
       return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
 
-      error_log("Erro ao listar empresa: " . $e->getMessage());
+      error_log("Erro ao buscar empresa: " . $e->getMessage());
       return [];
     }
   }

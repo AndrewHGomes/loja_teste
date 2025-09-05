@@ -1,17 +1,12 @@
-import { repassarDados } from "./api.js";
+import { apiGet } from "./api.js";
 
 export async function carregarCategorias() {
-  const objCategorias = await repassarDados("categorias");
+  const objCategorias = await apiGet("categorias");
 
   if (objCategorias && objCategorias.length > 0) {
-    const categorias = objCategorias.map((categoria) => {
-      const { id, descricao, pizza } = categoria;
-
-      return { id, descricao, pizza };
-    });
-
-    return categorias;
+    console.log(objCategorias);
+    return objCategorias;
   }
 
-  return null;
+  return [];
 }

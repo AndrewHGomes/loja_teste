@@ -3,13 +3,16 @@
 session_set_cookie_params(0);
 
 $telefoneLoja = "19987654321";
-$nomeLoja = "Raribbs_";
+$nomeLoja = "NomeDaLoja_";
 
 $telefoneHash = hash('sha256', $telefoneLoja);
 
 $nomeSessao = $nomeLoja . $telefoneHash;
 
 session_name($nomeSessao);
+
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
 
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
