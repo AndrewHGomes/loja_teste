@@ -7,8 +7,8 @@ export async function apiGet(endpoint) {
     const resposta = await fetch(url, {
       method: "GET",
       headers: {
-        "Accept": "application/json"
-      }
+        Accept: "application/json",
+      },
     });
     if (!resposta.ok) {
       throw new Error(`Erro na rede: ${resposta.statusText}`);
@@ -28,9 +28,9 @@ export async function apiPost(endpoint, payload = {}) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        Accept: "application/json",
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
     if (!resposta.ok) {
       throw new Error(`Erro na rede: ${resposta.statusText}`);

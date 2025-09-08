@@ -83,19 +83,19 @@ form fieldset,
 .box-produto .agrupar div input {
   border: none;
   outline: none;
-  width: 1.5em;
-  font-size: 1.3em;
+  width: 1.2em;
+  font-size: 1.2em;
   text-align: center;
 }
 
 .fa-plus-circle {
   color: #080;
-  font-size: 1.3em;
+  font-size: 1.2em;
 }
 
 .fa-minus-circle {
   color: #c00;
-  font-size: 1.3em;
+  font-size: 1.2em;
 }
 
 form fieldset legend {

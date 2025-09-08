@@ -1,7 +1,11 @@
 import { carregarEmpresa, carregarHorarios } from "./empresa.js";
-import { carregarProdutos, carregarCategorias } from "./produtos.js";
+import {
+  carregarProdutos,
+  carregarCategorias,
+  carregarPedidosAnteriores,
+} from "./produtos.js";
 
-import { capturar } from "./capturar.js";
+import { capturar, criarElemento } from "./capturar.js";
 
 //========================================================================================//
 
@@ -202,10 +206,47 @@ async function gerenciarAside() {
   }
 }
 
+async function gerenciarPedidosAnteriores() {
+  const pedidosAnteriores = await carregarPedidosAnteriores();
+  console.log(pedidosAnteriores);
+
+  const footer = capturar("footer");
+
+  const abrirFooter = capturar("footer > p");
+  abrirFooter.addEventListener("click", () => {
+    footer.classList.add("footer-aberto");
+  });
+
+  const fecharFooter = capturar("footer .fa-x");
+  fecharFooter.addEventListener("click", () => {
+    footer.classList.remove("footer-aberto");
+  });
+
+  const sectionPedidosAnteriores = capturar(".pedidos-anteriores");
+
+  pedidosAnteriores.forEach((pedido) => {
+    console.log(pedido);
+
+    const divPedido = criarElemento("div");
+
+    const dataHoraPedido = criarElemento("p");
+    dataHoraPedido.textContent = `${pedido.Data} - ${pedido.Hora}`;
+
+    const detalhesPedido = criarElemento("button");
+    detalhesPedido.innerHTML =
+      "Detalhes <i class='fa-solid fa-chevron-right'><i>";
+
+    divPedido.append(dataHoraPedido, detalhesPedido);
+
+    sectionPedidosAnteriores.appendChild(divPedido);
+  });
+}
+
 //========================================================================================//
 
 document.addEventListener("DOMContentLoaded", () => {
   gerenciarInfoEmpresa();
   gerenciarCategoriasMercadorias();
   gerenciarAside();
+  gerenciarPedidosAnteriores();
 });

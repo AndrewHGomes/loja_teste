@@ -120,4 +120,21 @@ class Produtos
       return [];
     }
   }
+
+  public function pegarPedidosAnteriores($fone)
+  {
+    try {
+      $sql = "SELECT `Data`, Hora, totalpedido, Codigo 
+      FROM vendas WHERE telefone = :fone ORDER BY Codigo DESC";
+
+      $stmt = $this->conexao->prepare($sql);
+      $stmt->bindParam(':fone', $fone, PDO::PARAM_STR);
+      $stmt->execute();
+
+      return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+      error_log("Erro ao buscar pedidos antigos: " . $e->getMessage());
+      return [];
+    }
+  }
 }

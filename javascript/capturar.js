@@ -4,3 +4,7 @@ export function capturar(seletor, todos = false) {
   }
   return document.querySelector(seletor);
 }
+
+export function criarElemento(seletor) {
+  return document.createElement(seletor);
+}

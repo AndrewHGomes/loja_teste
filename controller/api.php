@@ -66,6 +66,10 @@ try {
       $produtos = new Produtos();
       $dados = $produtos->pegarBordas();
       break;
+    case 'pedidos-anteriores':
+      $produtos = new Produtos();
+      $dados = $produtos->pegarPedidosAnteriores('5519993207114');
+      break;
     default:
       http_response_code(400);
       echo json_encode(['message' => 'Recurso não especificado.']);

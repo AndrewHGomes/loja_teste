@@ -19,3 +19,9 @@ export async function carregarCategorias() {
 
   return [];
 }
+
+export async function carregarPedidosAnteriores() {
+  const pedidosAnteriores = await apiGet("pedidos-anteriores");
+
+  return pedidosAnteriores;
+}
