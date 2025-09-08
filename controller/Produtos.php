@@ -35,6 +35,21 @@ class Produtos
     }
   }
 
+  public function pegarCategorias()
+  {
+    try {
+      $sql = "SELECT id, descricao, pizza, excluido, ativo FROM categorias WHERE ativo = 'S' AND excluido = 'N'";
+
+      $stmt = $this->conexao->prepare($sql);
+      $stmt->execute();
+
+      return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+      error_log("Erro ao listar produtos: " . $e->getMessage());
+      return [];
+    }
+  }
+
   public function pegarDetalhesDosProdutos($codigo)
   {
     try {

@@ -24,6 +24,10 @@ try {
       $produtos = new Produtos();
       $dados = $produtos->pegarTodosOsProdutos();
       break;
+    case 'categorias':
+      $produtos = new Produtos();
+      $dados = $produtos->pegarCategorias();
+      break;
     case 'detalhes-produtos':
       $cod = isset($_GET['cod']) ? (int)$_GET['cod'] : null;
       if ($cod) {

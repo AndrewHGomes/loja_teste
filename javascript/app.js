@@ -1,6 +1,5 @@
 import { carregarEmpresa, carregarHorarios } from "./empresa.js";
-// import { carregarCategorias } from "./categorias.js";
-import { carregarProdutos } from "./produtos.js";
+import { carregarProdutos, carregarCategorias } from "./produtos.js";
 
 import { capturar } from "./capturar.js";
 
@@ -53,15 +52,15 @@ async function gerenciarInfoEmpresa() {
 //========================================================================================//
 
 async function gerenciarCategoriasMercadorias() {
+  const produtos = await carregarProdutos();
+  const categorias = await carregarCategorias();
+
   const navCategorias = capturar(".nav-categorias");
   const sectionProdutos = capturar("#produtos");
 
   if (!navCategorias || !sectionProdutos) {
     return;
   }
-
-  const categorias = await carregarCategorias();
-  const mercadorias = await carregarProdutos();
 
   categorias.forEach((categoria) => {
     const linkCategoria = document.createElement("a");
@@ -76,22 +75,22 @@ async function gerenciarCategoriasMercadorias() {
     h3Categoria.textContent = categoria.descricao;
     sectionProdutos.insertAdjacentElement("beforeend", h3Categoria);
 
-    const mercadoriasDaCategoria = mercadorias.filter(
+    const produtosDaCategoria = produtos.filter(
       (item) => item.categoria === categoria.descricao
     );
 
-    mercadoriasDaCategoria.forEach((mercadoria) => {
+    produtosDaCategoria.forEach((mercadoria) => {
       const preco =
         mercadoria.pizza === "S"
           ? ""
           : `R$ ${parseFloat(mercadoria.Venda).toFixed(2)}`;
 
-      const formMercadoria = document.createElement("form");
-      formMercadoria.classList.add("produto-item");
-      formMercadoria.setAttribute("method", "post");
-      formMercadoria.setAttribute("action", "selecionar.html");
+      const formProdutos = document.createElement("form");
+      formProdutos.classList.add("produto-item");
+      formProdutos.setAttribute("method", "post");
+      formProdutos.setAttribute("action", "selecionar.html");
 
-      formMercadoria.innerHTML = `
+      formProdutos.innerHTML = `
         <label for="btn${mercadoria.Codigo}">
           <input type="hidden" name="categoria" value="${mercadoria.categoria}">
           <input type="hidden" name="produto" value="${mercadoria.Codigo}" readonly>
@@ -102,7 +101,7 @@ async function gerenciarCategoriasMercadorias() {
         <button class="invisible" id="btn${mercadoria.Codigo}"></button>
       `;
 
-      sectionProdutos.insertAdjacentElement("beforeend", formMercadoria);
+      sectionProdutos.insertAdjacentElement("beforeend", formProdutos);
     });
   });
 }
@@ -111,10 +110,8 @@ async function gerenciarCategoriasMercadorias() {
 
 async function gerenciarAside() {
   const empresa = await carregarEmpresa();
-  console.log(empresa);
 
   const horarios = await carregarHorarios();
-  console.log(horarios);
 
   const h3Aside = capturar("aside h3");
   if (h3Aside) {
@@ -147,23 +144,23 @@ async function gerenciarAside() {
   if (tabelaHorarios) {
     const diasDaSemana = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
 
-    // utilidades.forEach((item, index) => {
-    //   const tr = document.createElement("tr");
+    horarios.forEach((item, index) => {
+      const tr = document.createElement("tr");
 
-    //   const tdDia = document.createElement("td");
-    //   tdDia.textContent = diasDaSemana[index];
-    //   tr.appendChild(tdDia);
+      const tdDia = document.createElement("td");
+      tdDia.textContent = diasDaSemana[index];
+      tr.appendChild(tdDia);
 
-    //   const tdAbertura = document.createElement("td");
-    //   tdAbertura.textContent = item.abertura;
-    //   tr.appendChild(tdAbertura);
+      const tdAbertura = document.createElement("td");
+      tdAbertura.textContent = item.abertura;
+      tr.appendChild(tdAbertura);
 
-    //   const tdFechamento = document.createElement("td");
-    //   tdFechamento.textContent = item.fechamento;
-    //   tr.appendChild(tdFechamento);
+      const tdFechamento = document.createElement("td");
+      tdFechamento.textContent = item.fechamento;
+      tr.appendChild(tdFechamento);
 
-    //   tabelaHorarios.appendChild(tr);
-    // });
+      tabelaHorarios.appendChild(tr);
+    });
   }
 
   const abertoFechado = capturar(".fechado-aberto");
@@ -209,6 +206,6 @@ async function gerenciarAside() {
 
 document.addEventListener("DOMContentLoaded", () => {
   gerenciarInfoEmpresa();
-  // gerenciarCategoriasMercadorias();
+  gerenciarCategoriasMercadorias();
   gerenciarAside();
 });

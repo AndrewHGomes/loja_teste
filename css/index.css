@@ -206,7 +206,7 @@ aside table {
 aside table th,
 aside table td {
   text-align: center;
-  padding: 0.2em;
+  padding: 0.1em;
 }
 
 aside table tbody tr:nth-child(odd) {
