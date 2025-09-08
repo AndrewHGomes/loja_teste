@@ -32,9 +32,3 @@ class Conexao
     return self::$instancia;
   }
 }
-
-// try {
-//   $conexao = Conexao::instancia();
-// } catch (Exception $e) {
-//   die($e->getMessage());
-// }

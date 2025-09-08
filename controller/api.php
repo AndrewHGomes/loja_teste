@@ -5,10 +5,7 @@ ob_start();
 require_once 'session_init.php';
 require_once 'Conexao.php';
 require_once 'Empresa.php';
-require_once 'Categorias.php';
-require_once 'Mercadorias.php';
-require_once 'Utilitarios.php';
-require_once 'Status.php';
+require_once 'Produtos.php';
 
 try {
   $recurso = isset($_GET['recurso']) ? $_GET['recurso'] : null;
@@ -16,28 +13,54 @@ try {
 
   switch ($recurso) {
     case 'empresa':
-      $empresa = new Empresa;
-      $dados = $empresa->objetoEmpresa();
-      break;
-    case 'categorias':
-      $categorias = new Categorias;
-      $dados = $categorias->buscarCategorias();
-      break;
-    case 'mercadorias':
-      $mercadorias = new Mercadorias;
-      $dados = $mercadorias->buscarMercadorias();
-      break;
-    case 'parametros':
-      $utilitarios = new Utilitarios;
-      $dados = $utilitarios->pegarParametros();
+      $empresa = new Empresa();
+      $dados = $empresa->pegarDadosDaEmpresa();
       break;
     case 'horarios':
-      $utilitarios = new Utilitarios;
-      $dados = $utilitarios->pegarHorarios();
+      $empresa = new Empresa();
+      $dados = $empresa->pegarHorariosDaEmpresa();
       break;
-    case 'status':
-      $status = new Status;
-      $dados = $status->statusDoDia();
+    case 'produtos':
+      $produtos = new Produtos();
+      $dados = $produtos->pegarTodosOsProdutos();
+      break;
+    case 'detalhes-produtos':
+      $cod = isset($_GET['cod']) ? (int)$_GET['cod'] : null;
+      if ($cod) {
+        $produtos = new Produtos();
+        $dados = $produtos->pegarDetalhesDosProdutos($cod);
+      } else {
+        http_response_code(400);
+        echo json_encode(['message' => 'Código do produto não especificado.']);
+        exit;
+      }
+      break;
+    case 'tamanhos':
+      $cod = isset($_GET['cod']) ? (int)$_GET['cod'] : null;
+      if ($cod) {
+        $produtos = new Produtos();
+        $dados = $produtos->pegarTamanhosDosProdutos($cod);
+      } else {
+        http_response_code(400);
+        echo json_encode(['message' => 'Código do produto não especificado.']);
+        exit;
+      }
+      break;
+    case 'ingredientes':
+      $cod = isset($_GET['cod']) ? (int)$_GET['cod'] : null;
+      if ($cod) {
+        $produtos = new Produtos();
+        $ingredientes = $produtos->pegarIngredientesDosProdutos($cod);
+        $dados = ['ingredientes' => $ingredientes];
+      } else {
+        http_response_code(400);
+        echo json_encode(['message' => 'Código do produto não especificado.']);
+        exit;
+      }
+      break;
+    case 'bordas':
+      $produtos = new Produtos();
+      $dados = $produtos->pegarBordas();
       break;
     default:
       http_response_code(400);
