@@ -22,7 +22,7 @@ header img {
   color: #fff;
   border: none;
   border-radius: 10%;
-  padding: 10px;
+  padding: 5px;
   cursor: pointer;
   z-index: 10;
   display: flex;
@@ -230,10 +230,13 @@ footer {
   width: 100%;
   position: fixed;
   bottom: 0;
-  padding: 0.5em;
   border-top: 1px solid #ddd;
   box-shadow: 0 -2px 8px 2px rgba(0, 0, 0, 0.2);
   transition: all 0.4s ease-in-out;
+}
+
+.footer-inicial {
+  padding: 0.5em;
 }
 
 .conteudo-pedidos {
@@ -245,23 +248,18 @@ footer {
   bottom: 0;
   height: 100vh;
   position: fixed;
-  display: flex;
-  flex-direction: column;
   z-index: 30;
-}
-
-.footer-aberto p {
-  text-align: center;
-  margin-bottom: 1em;
+  overflow: auto;
 }
 
 .footer-aberto .conteudo-pedidos {
   display: block;
+  padding: 0.5em;
 }
 
 footer p {
   color: #333;
-  font-size: 0.8em;
+  font-size: 0.9em;
   display: flex;
   align-items: center;
 }
@@ -272,11 +270,36 @@ footer p .fa-clipboard-check {
 
 footer section .fa-x {
   position: absolute;
-  top: 0.9em;
-  right: 0.9em;
+  top: 0.5em;
+  right: 0.5em;
   background-color: #c00;
   color: #fff;
   padding: 0.3em 0;
   border-radius: 3px;
-  font-size: 1.2em;
+}
+
+.pedidos-anteriores {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.pedidos-anteriores p {
+  padding: 0.2em;
+}
+
+.pedidos-anteriores p i {
+  margin-right: 0.5em;
+}
+
+.fa-calendar-days {
+  color: #007bff;
+}
+
+.fa-circle-info {
+  color: #ffc107;
+}
+
+.fa-money-bill-wave {
+  color: #28a745;
 }

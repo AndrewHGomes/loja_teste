@@ -208,11 +208,10 @@ async function gerenciarAside() {
 
 async function gerenciarPedidosAnteriores() {
   const pedidosAnteriores = await carregarPedidosAnteriores();
-  console.log(pedidosAnteriores);
 
   const footer = capturar("footer");
 
-  const abrirFooter = capturar("footer > p");
+  const abrirFooter = capturar("footer > .footer-inicial");
   abrirFooter.addEventListener("click", () => {
     footer.classList.add("footer-aberto");
   });
@@ -225,18 +224,18 @@ async function gerenciarPedidosAnteriores() {
   const sectionPedidosAnteriores = capturar(".pedidos-anteriores");
 
   pedidosAnteriores.forEach((pedido) => {
-    console.log(pedido);
-
     const divPedido = criarElemento("div");
 
     const dataHoraPedido = criarElemento("p");
-    dataHoraPedido.textContent = `${pedido.Data} - ${pedido.Hora}`;
+    dataHoraPedido.innerHTML = `<i class="fa-solid fa-calendar-days"></i> ${pedido.Data} - ${pedido.Hora}`;
 
-    const detalhesPedido = criarElemento("button");
-    detalhesPedido.innerHTML =
-      "Detalhes <i class='fa-solid fa-chevron-right'><i>";
+    const detalhesPedido = criarElemento("p");
+    detalhesPedido.innerHTML = `<i class='fa-solid fa-circle-info'></i> Detalhes`;
 
-    divPedido.append(dataHoraPedido, detalhesPedido);
+    const valorPedido = criarElemento("p");
+    valorPedido.innerHTML = `<i class='fa-solid fa-money-bill-wave'></i> ${pedido.totalpedido}`;
+
+    divPedido.append(dataHoraPedido, detalhesPedido, valorPedido);
 
     sectionPedidosAnteriores.appendChild(divPedido);
   });
