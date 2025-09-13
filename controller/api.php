@@ -71,6 +71,10 @@ try {
         $produtos = new Produtos();
         $dados = $produtos->pegarPedidosAnteriores('5519993207114');
         break;
+      case 'detalhes-pedidos-anteriores':
+        $produtos = new Produtos();
+        $dados = $produtos->pegarDetalhesPedidosAnteriores('');
+        break;
       default:
         $response_code = 400;
         $dados = ['message' => 'Recurso GET não especificado.'];

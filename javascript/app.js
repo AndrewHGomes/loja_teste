@@ -40,6 +40,17 @@ async function gerenciarInfoEmpresa() {
         empresa.parametros.aberto === "S" ? "#080" : "#c00";
     }
 
+    infoStatus[0].addEventListener("click", () => {
+      Swal.fire({
+        text: `ESTAMOS ${
+          empresa.parametros.aberto === "S" ? "ABERTOS" : "FECHADOS"
+        }`,
+        icon: empresa.parametros.aberto === "S" ? "success" : "error",
+        backdrop: "rgba(0,0,0,0.7)",
+        confirmButtonColor: empresa.parametros.aberto === "S" ? "#080" : "#c00",
+      });
+    });
+
     if (infoStatus[1]) {
       infoStatus[1].innerHTML =
         empresa.parametros.ativaentrega === "N"
@@ -47,9 +58,30 @@ async function gerenciarInfoEmpresa() {
           : "RETIRAR | ENTREGAR";
     }
 
+    infoStatus[1].addEventListener("click", () => {
+      Swal.fire({
+        text: `${
+          empresa.parametros.ativaentrega === "N" ? "NÃO ESTAMOS" : "ESTAMOS"
+        } ENTREGANDO`,
+        icon: empresa.parametros.ativaentrega === "S" ? "success" : "error",
+        backdrop: "rgba(0,0,0,0.7)",
+        confirmButtonColor:
+          empresa.parametros.ativaentrega === "S" ? "#080" : "#c00",
+      });
+    });
+
     if (infoStatus[2]) {
       infoStatus[2].innerHTML = `<i class="fa-regular fa-clock"></i> ${empresa.parametros.tempoentrega}`;
     }
+
+    infoStatus[2].addEventListener("click", () => {
+      Swal.fire({
+        text: ` TEMPO DE ENTREGA É DE ${empresa.parametros.tempoentrega}`,
+        icon: "info",
+        backdrop: "rgba(0,0,0,0.7)",
+        confirmButtonColor: "#080",
+      });
+    });
   }
 }
 
@@ -208,6 +240,7 @@ async function gerenciarAside() {
 
 async function gerenciarPedidosAnteriores() {
   const pedidosAnteriores = await carregarPedidosAnteriores();
+  console.log(pedidosAnteriores);
 
   const footer = capturar("footer");
 
@@ -230,7 +263,7 @@ async function gerenciarPedidosAnteriores() {
     dataHoraPedido.innerHTML = `<i class="fa-solid fa-calendar-days"></i> ${pedido.Data} - ${pedido.Hora}`;
 
     const detalhesPedido = criarElemento("p");
-    detalhesPedido.innerHTML = `<i class='fa-solid fa-circle-info'></i> Detalhes`;
+    detalhesPedido.innerHTML = `<i class='fa-solid fa-circle-info'></i> Detalhes <i class='fa-solid fa-chevron-down'></i>`;
 
     const valorPedido = criarElemento("p");
     valorPedido.innerHTML = `<i class='fa-solid fa-money-bill-wave'></i> ${pedido.totalpedido}`;
@@ -238,6 +271,17 @@ async function gerenciarPedidosAnteriores() {
     divPedido.append(dataHoraPedido, detalhesPedido, valorPedido);
 
     sectionPedidosAnteriores.appendChild(divPedido);
+
+    capturar(".fa-chevron-down", true).forEach((chevron) => {
+      chevron.addEventListener("click", () => {
+        Swal.fire({
+          text: ``,
+          icon: "info",
+          backdrop: "rgba(0,0,0,0.7)",
+          confirmButtonColor: "#080",
+        });
+      });
+    });
   });
 }
 

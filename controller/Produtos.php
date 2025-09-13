@@ -137,4 +137,23 @@ class Produtos
       return [];
     }
   }
+
+  public function pegarDetalhesPedidosAnteriores($cod)
+  {
+    try {
+      $sql = "SELECT vendasdet.*, vendasdetcomp.*
+      FROM vendasdet LEFT JOIN
+      vendasdetcomp ON vendasdet.Codigo = vendasdetcomp.idVendasDet
+      WHERE vendasdet.CodVenda = :cod ORDER BY vendasdet.Codigo";
+
+      $stmt = $this->conexao->prepare($sql);
+      $stmt->bindParam(':cod', $cod, PDO::PARAM_STR);
+      $stmt->execute();
+
+      return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+      error_log("Erro ao buscar pedidos antigos: " . $e->getMessage());
+      return [];
+    }
+  }
 }

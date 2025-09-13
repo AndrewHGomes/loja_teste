@@ -20,8 +20,14 @@ export async function carregarCategorias() {
   return [];
 }
 
-export async function carregarPedidosAnteriores() {
+export async function carregarPedidosAnteriores(telefone) {
   const pedidosAnteriores = await apiGet("pedidos-anteriores");
 
   return pedidosAnteriores;
+}
+
+export async function carregarDetalhesPedidosAnteriores(codigo) {
+  const detalhesPedidosAnteriores = await apiGet("detalhes-pedidos-anteriores");
+
+  return detalhesPedidosAnteriores;
 }

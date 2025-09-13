@@ -284,7 +284,12 @@ footer section .fa-x {
   gap: 1em;
 }
 
+.pedidos-anteriores div {
+  border-top: 1px solid #cfcfcf;
+}
+
 .pedidos-anteriores p {
+  color: #111;
   padding: 0.2em;
 }
 
@@ -292,14 +297,27 @@ footer section .fa-x {
   margin-right: 0.5em;
 }
 
-.fa-calendar-days {
+.fa-calendar-days,
+p:has(.fa-calendar-days) {
+  font-weight: bold;
   color: #007bff;
 }
 
-.fa-circle-info {
-  color: #ffc107;
+.fa-circle-info,
+p:has(.fa-circle-info) {
+  font-weight: bold;
+  color: #c00;
 }
 
-.fa-money-bill-wave {
+.fa-chevron-down {
+  color: #c00;
+  margin-left: 0.5em;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.fa-money-bill-wave,
+p:has(.fa-money-bill-wave) {
+  font-weight: bold;
   color: #28a745;
 }
