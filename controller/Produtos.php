@@ -141,10 +141,12 @@ class Produtos
   public function pegarDetalhesPedidosAnteriores($cod)
   {
     try {
+
       $sql = "SELECT vendasdet.*, vendasdetcomp.*
-      FROM vendasdet LEFT JOIN
-      vendasdetcomp ON vendasdet.Codigo = vendasdetcomp.idVendasDet
-      WHERE vendasdet.CodVenda = :cod ORDER BY vendasdet.Codigo";
+              FROM vendasdet LEFT JOIN
+              vendasdetcomp ON vendasdet.Codigo = vendasdetcomp.idVendasDet
+              WHERE vendasdet.CodVenda = :cod
+        ";
 
       $stmt = $this->conexao->prepare($sql);
       $stmt->bindParam(':cod', $cod, PDO::PARAM_STR);
@@ -152,7 +154,8 @@ class Produtos
 
       return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-      error_log("Erro ao buscar pedidos antigos: " . $e->getMessage());
+
+      error_log("Erro ao buscar detalhes de pedidos: " . $e->getMessage());
       return [];
     }
   }

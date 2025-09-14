@@ -3,6 +3,7 @@ import {
   carregarProdutos,
   carregarCategorias,
   carregarPedidosAnteriores,
+  carregarDetalhesPedidosAnteriores,
 } from "./produtos.js";
 
 import { capturar, criarElemento } from "./capturar.js";
@@ -13,19 +14,16 @@ async function gerenciarInfoEmpresa() {
   const empresa = await carregarEmpresa();
 
   const title = capturar("title");
-
   if (title) {
     title.textContent = empresa.empresa.Fantasia;
   }
 
   const tituloEmpresa = capturar("#titulo-empresa");
-
   if (tituloEmpresa) {
     tituloEmpresa.textContent = empresa.empresa.Fantasia;
   }
 
   const cidadeEmpresa = capturar("#cidade-empresa");
-
   if (cidadeEmpresa) {
     cidadeEmpresa.textContent = `${empresa.empresa.Cidade} - SP`;
   }
@@ -38,50 +36,51 @@ async function gerenciarInfoEmpresa() {
         empresa.parametros.aberto === "S" ? "ABERTO" : "FECHADO";
       infoStatus[0].style.color =
         empresa.parametros.aberto === "S" ? "#080" : "#c00";
-    }
 
-    infoStatus[0].addEventListener("click", () => {
-      Swal.fire({
-        text: `ESTAMOS ${
-          empresa.parametros.aberto === "S" ? "ABERTOS" : "FECHADOS"
-        }`,
-        icon: empresa.parametros.aberto === "S" ? "success" : "error",
-        backdrop: "rgba(0,0,0,0.7)",
-        confirmButtonColor: empresa.parametros.aberto === "S" ? "#080" : "#c00",
+      infoStatus[0].addEventListener("click", () => {
+        Swal.fire({
+          text: `ESTAMOS ${
+            empresa.parametros.aberto === "S" ? "ABERTOS" : "FECHADOS"
+          }`,
+          icon: empresa.parametros.aberto === "S" ? "success" : "error",
+          backdrop: "rgba(0,0,0,0.7)",
+          confirmButtonColor:
+            empresa.parametros.aberto === "S" ? "#080" : "#c00",
+        });
       });
-    });
+    }
 
     if (infoStatus[1]) {
       infoStatus[1].innerHTML =
         empresa.parametros.ativaentrega === "N"
           ? "RETIRAR | <del>ENTREGAR</del>"
           : "RETIRAR | ENTREGAR";
-    }
 
-    infoStatus[1].addEventListener("click", () => {
-      Swal.fire({
-        text: `${
-          empresa.parametros.ativaentrega === "N" ? "NÃO ESTAMOS" : "ESTAMOS"
-        } ENTREGANDO`,
-        icon: empresa.parametros.ativaentrega === "S" ? "success" : "error",
-        backdrop: "rgba(0,0,0,0.7)",
-        confirmButtonColor:
-          empresa.parametros.ativaentrega === "S" ? "#080" : "#c00",
+      infoStatus[1].addEventListener("click", () => {
+        Swal.fire({
+          text: `${
+            empresa.parametros.ativaentrega === "N" ? "NÃO ESTAMOS" : "ESTAMOS"
+          } ENTREGANDO`,
+          icon: empresa.parametros.ativaentrega === "S" ? "success" : "error",
+          backdrop: "rgba(0,0,0,0.7)",
+          confirmButtonColor:
+            empresa.parametros.ativaentrega === "S" ? "#080" : "#c00",
+        });
       });
-    });
+    }
 
     if (infoStatus[2]) {
       infoStatus[2].innerHTML = `<i class="fa-regular fa-clock"></i> ${empresa.parametros.tempoentrega}`;
-    }
 
-    infoStatus[2].addEventListener("click", () => {
-      Swal.fire({
-        text: ` TEMPO DE ENTREGA É DE ${empresa.parametros.tempoentrega}`,
-        icon: "info",
-        backdrop: "rgba(0,0,0,0.7)",
-        confirmButtonColor: "#080",
+      infoStatus[2].addEventListener("click", () => {
+        Swal.fire({
+          text: ` TEMPO DE ENTREGA É DE ${empresa.parametros.tempoentrega}`,
+          icon: "info",
+          backdrop: "rgba(0,0,0,0.7)",
+          confirmButtonColor: "#080",
+        });
       });
-    });
+    }
   }
 }
 
@@ -146,34 +145,25 @@ async function gerenciarCategoriasMercadorias() {
 
 async function gerenciarAside() {
   const empresa = await carregarEmpresa();
-
   const horarios = await carregarHorarios();
 
   const h3Aside = capturar("aside h3");
-  if (h3Aside) {
+  if (h3Aside)
     h3Aside.textContent = `${empresa.empresa.Endereco}, ${empresa.empresa.Numero}`;
-  }
 
   const h4Aside = capturar("aside h4");
-  if (h4Aside) {
-    h4Aside.textContent = `${empresa.empresa.Bairro}`;
-  }
+  if (h4Aside) h4Aside.textContent = `${empresa.empresa.Bairro}`;
 
   const tdPreparo = capturar(".tabela1 td:nth-of-type(1)");
-  if (tdPreparo) {
-    tdPreparo.textContent = empresa.parametros.tempoentrega;
-  }
+  if (tdPreparo) tdPreparo.textContent = empresa.parametros.tempoentrega;
 
   const tdRetirar = capturar(".tabela1 td:nth-of-type(2)");
-  if (tdRetirar) {
-    tdRetirar.textContent = "SIM";
-  }
+  if (tdRetirar) tdRetirar.textContent = "SIM";
 
   const tdEntregar = capturar(".tabela1 td:nth-of-type(3)");
-  if (tdEntregar) {
+  if (tdEntregar)
     tdEntregar.textContent =
       empresa.parametros.ativaentrega === "S" ? "SIM" : "NÃO";
-  }
 
   const tabelaHorarios = capturar(".tabela2 tbody");
 
@@ -239,52 +229,89 @@ async function gerenciarAside() {
 }
 
 async function gerenciarPedidosAnteriores() {
-  const pedidosAnteriores = await carregarPedidosAnteriores();
-  console.log(pedidosAnteriores);
+  const foneDoUsuario = "5519989716177";
+  const pedidosAnteriores = await carregarPedidosAnteriores(foneDoUsuario);
 
   const footer = capturar("footer");
-
   const abrirFooter = capturar("footer > .footer-inicial");
-  abrirFooter.addEventListener("click", () => {
-    footer.classList.add("footer-aberto");
-  });
-
   const fecharFooter = capturar("footer .fa-x");
-  fecharFooter.addEventListener("click", () => {
-    footer.classList.remove("footer-aberto");
-  });
-
   const sectionPedidosAnteriores = capturar(".pedidos-anteriores");
 
-  pedidosAnteriores.forEach((pedido) => {
-    const divPedido = criarElemento("div");
+  if (abrirFooter && footer) {
+    abrirFooter.addEventListener("click", () => {
+      footer.classList.add("footer-aberto");
+    });
+  }
 
-    const dataHoraPedido = criarElemento("p");
-    dataHoraPedido.innerHTML = `<i class="fa-solid fa-calendar-days"></i> ${pedido.Data} - ${pedido.Hora}`;
+  if (fecharFooter && footer) {
+    fecharFooter.addEventListener("click", () => {
+      footer.classList.remove("footer-aberto");
+    });
+  }
 
-    const detalhesPedido = criarElemento("p");
-    detalhesPedido.innerHTML = `<i class='fa-solid fa-circle-info'></i> Detalhes <i class='fa-solid fa-chevron-down'></i>`;
+  if (Array.isArray(pedidosAnteriores)) {
+    pedidosAnteriores.forEach((pedido) => {
+      const divPedido = criarElemento("div");
+      divPedido.classList.add("pedido-item");
 
-    const valorPedido = criarElemento("p");
-    valorPedido.innerHTML = `<i class='fa-solid fa-money-bill-wave'></i> ${pedido.totalpedido}`;
+      const dataHoraPedido = criarElemento("p");
+      dataHoraPedido.innerHTML = `<i class="fa-solid fa-calendar-days"></i> ${pedido.Data} - ${pedido.Hora}`;
 
-    divPedido.append(dataHoraPedido, detalhesPedido, valorPedido);
+      const botaoDetalhes = criarElemento("button");
+      botaoDetalhes.classList.add("detalhes-pedido-btn");
+      botaoDetalhes.innerHTML = `<i class='fa-solid fa-circle-info'></i> Detalhes <i class='fa-solid fa-arrow-pointer'></i>`;
 
-    sectionPedidosAnteriores.appendChild(divPedido);
+      const valorPedido = criarElemento("p");
+      valorPedido.innerHTML = `<i class='fa-solid fa-money-bill-wave'></i> ${pedido.totalpedido}`;
 
-    capturar(".fa-chevron-down", true).forEach((chevron) => {
-      chevron.addEventListener("click", () => {
-        Swal.fire({
-          text: ``,
-          icon: "info",
-          backdrop: "rgba(0,0,0,0.7)",
-          confirmButtonColor: "#080",
-        });
+      divPedido.append(dataHoraPedido, botaoDetalhes, valorPedido);
+
+      if (sectionPedidosAnteriores) {
+        sectionPedidosAnteriores.appendChild(divPedido);
+      }
+
+      botaoDetalhes.addEventListener("click", () => {
+        mostrarDetalhesPedidosAnteriores(pedido.Codigo);
       });
     });
-  });
+  } else {
+    console.log(
+      "Não foi possível carregar os pedidos, a resposta da API não foi um array.",
+      pedidosAnteriores
+    );
+  }
 }
 
+async function mostrarDetalhesPedidosAnteriores(codigo) {
+  const detalhesPedidosAnteriores = await carregarDetalhesPedidosAnteriores(
+    codigo
+  );
+  console.log(detalhesPedidosAnteriores);
+
+  let conteudoHtml = "<ul>";
+
+  // Itera sobre o array de produtos retornado do backend
+  for (const produto of detalhesPedidosAnteriores) {
+    // Cada item principal é um <li>
+    conteudoHtml += `<li><b>${produto.Descricao}</b> (${produto.Quantidade}x)</li>`;
+
+    if (produto.Complementos && produto.Complementos.length > 0) {
+      conteudoHtml += "<ul>";
+      produto.Complementos.forEach((comp) => {
+        conteudoHtml += `<li>${comp.Descricao} (${comp.Quantidade}x)</li>`;
+      });
+      conteudoHtml += "</ul>";
+    }
+  }
+
+  conteudoHtml += "</ul>";
+
+  Swal.fire({
+    html: conteudoHtml,
+    backdrop: "rgba(0,0,0,0.7)",
+    confirmButtonColor: "#080",
+  });
+}
 //========================================================================================//
 
 document.addEventListener("DOMContentLoaded", () => {

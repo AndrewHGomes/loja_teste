@@ -33,7 +33,7 @@ try {
         $dados = $produtos->pegarCategorias();
         break;
       case 'detalhes-produtos':
-        $cod = isset($_GET['cod']) ? (int)$_GET['cod'] : null;
+        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
         if ($cod) {
           $produtos = new Produtos();
           $dados = $produtos->pegarDetalhesDosProdutos($cod);
@@ -43,7 +43,7 @@ try {
         }
         break;
       case 'tamanhos':
-        $cod = isset($_GET['cod']) ? (int)$_GET['cod'] : null;
+        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
         if ($cod) {
           $produtos = new Produtos();
           $dados = $produtos->pegarTamanhosDosProdutos($cod);
@@ -53,7 +53,7 @@ try {
         }
         break;
       case 'ingredientes':
-        $cod = isset($_GET['cod']) ? (int)$_GET['cod'] : null;
+        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
         if ($cod) {
           $produtos = new Produtos();
           $ingredientes = $produtos->pegarIngredientesDosProdutos($cod);
@@ -68,12 +68,24 @@ try {
         $dados = $produtos->pegarBordas();
         break;
       case 'pedidos-anteriores':
-        $produtos = new Produtos();
-        $dados = $produtos->pegarPedidosAnteriores('5519993207114');
+        $fone = isset($_GET['fone']) ? $_GET['fone'] : null;
+        if ($fone) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarPedidosAnteriores($fone);
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Telefone não especificado.'];
+        }
         break;
       case 'detalhes-pedidos-anteriores':
-        $produtos = new Produtos();
-        $dados = $produtos->pegarDetalhesPedidosAnteriores('');
+        $cod = isset($_GET['codigo']) ? $_GET['codigo'] : null;
+        if ($cod) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarDetalhesPedidosAnteriores($cod);
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Código do pedido não especificado.'];
+        }
         break;
       default:
         $response_code = 400;

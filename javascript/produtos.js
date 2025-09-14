@@ -20,14 +20,15 @@ export async function carregarCategorias() {
   return [];
 }
 
-export async function carregarPedidosAnteriores(telefone) {
-  const pedidosAnteriores = await apiGet("pedidos-anteriores");
-
+export async function carregarPedidosAnteriores(fone) {
+  const pedidosAnteriores = await apiGet(`pedidos-anteriores&fone=${fone}`);
   return pedidosAnteriores;
 }
 
 export async function carregarDetalhesPedidosAnteriores(codigo) {
-  const detalhesPedidosAnteriores = await apiGet("detalhes-pedidos-anteriores");
+  const detalhesPedidosAnteriores = await apiGet(
+    `detalhes-pedidos-anteriores&codigo=${codigo}`
+  );
 
   return detalhesPedidosAnteriores;
 }

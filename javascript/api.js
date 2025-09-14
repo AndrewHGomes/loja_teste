@@ -1,6 +1,5 @@
 const URL_BASE_API = "controller/api.php";
 
-// Função para requisição GET
 export async function apiGet(endpoint) {
   const url = `${URL_BASE_API}?recurso=${endpoint}`;
   try {
@@ -20,7 +19,6 @@ export async function apiGet(endpoint) {
   }
 }
 
-// Função para requisição POST
 export async function apiPost(endpoint, payload = {}) {
   const url = `${URL_BASE_API}?recurso=${endpoint}`;
   try {
