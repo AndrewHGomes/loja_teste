@@ -286,32 +286,50 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
   const detalhesPedidosAnteriores = await carregarDetalhesPedidosAnteriores(
     codigo
   );
-  console.log(detalhesPedidosAnteriores);
+
+  let dataHora = "";
+  let totalPedido = "";
 
   let conteudoHtml = "<ul>";
 
-  // Itera sobre o array de produtos retornado do backend
-  for (const produto of detalhesPedidosAnteriores) {
-    // Cada item principal é um <li>
-    conteudoHtml += `<li><b>${produto.Descricao}</b> (${produto.Quantidade}x)</li>`;
+  detalhesPedidosAnteriores.forEach((obj) => {
+    dataHora = `${obj.Data} ${obj.Hora}`;
+    totalPedido = obj.totalpedido;
 
-    if (produto.Complementos && produto.Complementos.length > 0) {
-      conteudoHtml += "<ul>";
-      produto.Complementos.forEach((comp) => {
-        conteudoHtml += `<li>${comp.Descricao} (${comp.Quantidade}x)</li>`;
-      });
-      conteudoHtml += "</ul>";
+    if (obj.Complementos && Array.isArray(obj.Complementos)) {
+      conteudoHtml += `<li><b>${obj.Descricao}</b> <b>${Number(
+        obj.Valor
+      ).toFixed(2)}</b></li>`;
+
+      if (obj.Complementos.length > 0) {
+        conteudoHtml += "<ul>";
+        obj.Complementos.forEach((comp) => {
+          conteudoHtml += `<li><span>${
+            comp.DescricaoComp
+          }</span> <span>${Number(comp.Valor).toFixed(2)}</span></li>`;
+        });
+        conteudoHtml += "</ul>";
+      }
+    } else if (obj.TaxaTransp) {
+      conteudoHtml += `<li><span>Taxa de Transporte:</span> <span>${Number(
+        obj.TaxaTransp
+      ).toFixed(2)}</span></li>`;
     }
-  }
+  });
 
+  conteudoHtml += `<li><span>Total do Pedido:</span> <span>${Number(
+    totalPedido
+  ).toFixed(2)}</span></li>`;
   conteudoHtml += "</ul>";
 
   Swal.fire({
+    title: dataHora,
     html: conteudoHtml,
     backdrop: "rgba(0,0,0,0.7)",
     confirmButtonColor: "#080",
   });
 }
+
 //========================================================================================//
 
 document.addEventListener("DOMContentLoaded", () => {

@@ -141,20 +141,54 @@ class Produtos
   public function pegarDetalhesPedidosAnteriores($cod)
   {
     try {
+      $sqlItens = "SELECT * FROM vendasdet WHERE CodVenda = :cod";
+      $stmtItens = $this->conexao->prepare($sqlItens);
+      $stmtItens->bindParam(':cod', $cod, PDO::PARAM_INT);
+      $stmtItens->execute();
+      $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
 
-      $sql = "SELECT vendasdet.*, vendasdetcomp.*
-              FROM vendasdet LEFT JOIN
-              vendasdetcomp ON vendasdet.Codigo = vendasdetcomp.idVendasDet
-              WHERE vendasdet.CodVenda = :cod
-        ";
+      $itensAgrupados = [];
+      foreach ($itens as $item) {
+        $itensAgrupados[$item['Codigo']] = $item;
+        $itensAgrupados[$item['Codigo']]['Complementos'] = [];
+      }
 
-      $stmt = $this->conexao->prepare($sql);
-      $stmt->bindParam(':cod', $cod, PDO::PARAM_STR);
-      $stmt->execute();
+      if (!empty($itensAgrupados)) {
+        $idsItens = array_keys($itensAgrupados);
+        $placeholders = implode(',', array_fill(0, count($idsItens), '?'));
 
-      return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $sqlComplementos = "SELECT vendasdetcomp.*, mercadorias.Complemento, mercadorias.Descricao AS DescricaoComp
+                            FROM vendasdetcomp JOIN mercadorias ON vendasdetcomp.idProdComp = mercadorias.Codigo
+                            WHERE vendasdetcomp.idVendasDet IN ($placeholders)";
+
+        $stmtComplementos = $this->conexao->prepare($sqlComplementos);
+        foreach ($idsItens as $k => $id) {
+          $stmtComplementos->bindValue(($k + 1), $id, PDO::PARAM_INT);
+        }
+        $stmtComplementos->execute();
+        $complementos = $stmtComplementos->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($complementos as $comp) {
+          $idItem = $comp['idVendasDet'];
+          if (isset($itensAgrupados[$idItem])) {
+            $itensAgrupados[$idItem]['Complementos'][] = $comp;
+          }
+        }
+      }
+
+      $sqlTaxa = "SELECT `Data`, Hora, TaxaTransp, totalpedido FROM vendas WHERE Codigo = :cod";
+      $stmtTaxa = $this->conexao->prepare($sqlTaxa);
+      $stmtTaxa->bindParam(':cod', $cod, PDO::PARAM_INT);
+      $stmtTaxa->execute();
+      $taxa = $stmtTaxa->fetch(PDO::FETCH_ASSOC);
+
+      $arrayFinal = array_values($itensAgrupados);
+      if ($taxa) {
+        $arrayFinal[] = $taxa;
+      }
+
+      return $arrayFinal;
     } catch (PDOException $e) {
-
       error_log("Erro ao buscar detalhes de pedidos: " . $e->getMessage());
       return [];
     }

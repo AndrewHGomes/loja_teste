@@ -331,6 +331,22 @@ footer section .fa-x {
   color: #28a745;
 }
 
+.swal2-html-container {
+  padding: 0.5em;
+  font-size: 1em;
+}
+
 .swal2-modal ul {
   list-style: none;
+  text-align: start;
+}
+
+.swal2-modal ul li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3em 0 0 0;
+}
+
+.swal2-modal ul ul li {
+  font-size: 0.9em;
 }
