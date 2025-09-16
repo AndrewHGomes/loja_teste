@@ -133,7 +133,9 @@ async function gerenciarCategoriasMercadorias() {
       const imagemItem = criarElemento("div");
       imagemItem.classList.add("imagem-item");
 
-      imagemItem.innerHTML = `<img src="" alt="produto" />`;
+      const urlImagemProduto = "./images/empresa.jpg";
+
+      imagemItem.innerHTML = `<img src="${urlImagemProduto}" alt="produto" />`;
 
       const produtoItem = criarElemento("div");
       produtoItem.classList.add("produto-item");
@@ -151,6 +153,7 @@ async function gerenciarCategoriasMercadorias() {
           descricao: mercadoria.Descricao,
           observacaoProduto: observacaoProduto,
           preco: preco,
+          imgProduto: imagemItem.innerHTML,
         };
 
         const resposta = await apiPost("selecionar-produto", payload);
@@ -371,13 +374,19 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
 
 async function gerenciarProdutoSelecionado() {
   const produtoSelecionado = await carregarProdutoSelecionado();
+  console.log(produtoSelecionado);
 
+  const imgProdutoHeader = capturar("header img");
   const tituloProduto = capturar(".box-produto h3");
   const descricaoProduto = capturar(".box-produto small");
   const precoProduto = capturar(".box-produto .agrupar span");
   const btnMinusPrincipal = capturar(".box-produto .agrupar .fa-minus-circle");
   const btnPlusPrincipal = capturar(".box-produto .agrupar .fa-plus-circle");
   const inputQtdPrincipal = capturar(".box-produto .agrupar input");
+
+  if (imgProdutoHeader) {
+    imgProdutoHeader.src = produtoSelecionado.produto.imgProduto;
+  }
 
   if (tituloProduto) {
     tituloProduto.textContent = produtoSelecionado.produto.descricao;

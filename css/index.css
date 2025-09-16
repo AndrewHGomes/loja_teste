@@ -163,6 +163,11 @@ main {
   flex: 1;
 }
 
+#produtos .box-produto .imagem-item img {
+  width: 100%;
+  height: 100%;
+}
+
 aside {
   position: fixed;
   z-index: 30;
