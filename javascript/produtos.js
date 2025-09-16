@@ -22,7 +22,12 @@ export async function carregarCategorias() {
 
 export async function carregarPedidosAnteriores(fone) {
   const pedidosAnteriores = await apiGet(`pedidos-anteriores&fone=${fone}`);
-  return pedidosAnteriores;
+
+  if (pedidosAnteriores) {
+    return pedidosAnteriores;
+  }
+
+  return [];
 }
 
 export async function carregarDetalhesPedidosAnteriores(codigo) {
@@ -30,5 +35,19 @@ export async function carregarDetalhesPedidosAnteriores(codigo) {
     `detalhes-pedidos-anteriores&codigo=${codigo}`
   );
 
-  return detalhesPedidosAnteriores;
+  if (detalhesPedidosAnteriores) {
+    return detalhesPedidosAnteriores;
+  }
+
+  return [];
+}
+
+export async function carregarProdutoSelecionado() {
+  const produtoSelecionado = await apiGet("produto-selecionado");
+
+  if (produtoSelecionado) {
+    return produtoSelecionado;
+  }
+
+  return {};
 }

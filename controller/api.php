@@ -87,6 +87,14 @@ try {
           $dados = ['message' => 'Código do pedido não especificado.'];
         }
         break;
+      case 'produto-selecionado':
+        if (isset($_SESSION['produto_selecionado'])) {
+          $dados = ['status' => 'success', 'produto' => $_SESSION['produto_selecionado']];
+        } else {
+          $response_code = 404;
+          $dados = ['status' => 'error', 'message' => 'Nenhum produto selecionado na sessão.'];
+        }
+        break;
       default:
         $response_code = 400;
         $dados = ['message' => 'Recurso GET não especificado.'];
@@ -94,6 +102,17 @@ try {
   } elseif ($metodo === 'POST') {
 
     switch ($recurso) {
+      case 'selecionar-produto':
+        $json_payload = file_get_contents('php://input');
+        $payload = json_decode($json_payload, true);
+        if (isset($payload['produto']) && isset($payload['descricao'])) {
+          $_SESSION['produto_selecionado'] = $payload;
+          $dados = ['status' => 'success', 'message' => 'Dados do produto armazenados na sessão.'];
+        } else {
+          $response_code = 400;
+          $dados = ['status' => 'error', 'message' => 'Dados do produto inválidos.'];
+        }
+        break;
       default:
         $response_code = 400;
         $dados = ['message' => 'Recurso POST não especificado.'];

@@ -53,59 +53,62 @@ header .fa-magnifying-glass-plus {
   left: 50%;
 }
 
-form {
+#produto-box {
   padding: 0.5em;
 }
 
-form fieldset,
-.box-produto {
+#produto-box fieldset,
+#produto-box .box-produto {
+  padding: 0.5em;
   border: 1px solid #e0e0e0;
   border-radius: 3px;
-  padding: 0.5em;
 }
 
-.box-produto h3 {
-  text-align: center;
+#produto-box .box-produto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
 }
 
-.box-produto .agrupar {
+#produto-box .box-produto .agrupar {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.box-produto .agrupar div {
+#produto-box .box-produto .agrupar div {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.box-produto .agrupar div input {
+#produto-box .box-produto .agrupar div input {
   border: none;
   outline: none;
-  width: 1.2em;
-  font-size: 1.2em;
+  width: 2em;
+  font-size: 1.1em;
   text-align: center;
+  padding: 0 0.1em;
 }
 
 .fa-plus-circle {
   color: #080;
-  font-size: 1.2em;
+  font-size: 1.1em;
 }
 
 .fa-minus-circle {
   color: #c00;
-  font-size: 1.2em;
+  font-size: 1.1em;
 }
 
-form fieldset legend {
+#produto-box fieldset legend {
   margin: 0 0.5em;
   padding: 0 0.5em;
   font-weight: bold;
   color: #333;
 }
 
-form fieldset textarea {
+#produto-box fieldset textarea {
   border: none;
   outline: none;
   width: 100%;

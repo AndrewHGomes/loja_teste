@@ -135,7 +135,7 @@ main {
 }
 
 #produtos .box-produto .produto-item {
-  flex: 1;
+  flex: 2;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -151,7 +151,7 @@ main {
 #produtos .box-produto .produto-item .observacao-produto {
   font-weight: normal;
   color: #777;
-  font-size: 0.8em;
+  font-size: 0.75em;
   word-wrap: break-word;
 }
 
@@ -251,6 +251,12 @@ footer {
   border-top: 1px solid #ddd;
   box-shadow: 0 -2px 8px 2px rgba(0, 0, 0, 0.2);
   transition: all 0.4s ease-in-out;
+  overflow: auto;
+}
+
+html.no-scroll,
+body.no-scroll {
+  overflow: hidden;
 }
 
 .footer-inicial {
@@ -272,7 +278,7 @@ footer {
 
 .footer-aberto .conteudo-pedidos {
   display: block;
-  padding: 0.5em;
+  padding: 1em 0.5em;
 }
 
 footer p {
@@ -303,7 +309,7 @@ footer section .fa-x {
 }
 
 .pedidos-anteriores div {
-  border-top: 1px solid #cfcfcf;
+  border-top: 1px solid #e0e0e0;
 }
 
 .pedidos-anteriores p {
@@ -367,4 +373,11 @@ footer section .fa-x {
 
 .swal2-modal ul ul li {
   font-size: 0.9em;
+}
+
+.swal2-modal p {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5em 0 0 0;
+  border-top: 1px solid #e0e0e0;
 }

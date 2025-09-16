@@ -1,9 +1,12 @@
+import { apiPost } from "./api.js";
+
 import { carregarEmpresa, carregarHorarios } from "./empresa.js";
 import {
   carregarProdutos,
   carregarCategorias,
   carregarPedidosAnteriores,
   carregarDetalhesPedidosAnteriores,
+  carregarProdutoSelecionado,
 } from "./produtos.js";
 
 import { capturar, criarElemento } from "./capturar.js";
@@ -120,8 +123,9 @@ async function gerenciarCategoriasMercadorias() {
           ? ""
           : `R$ ${parseFloat(mercadoria.Venda).toFixed(2)}`;
 
-      const observacaoProduto =
-        categoria.descricao === "BEBIDAS" ? "" : mercadoria.Descricao;
+      const observacaoProduto = mercadoria.Observacao
+        ? mercadoria.Observacao
+        : "";
 
       const boxDoProduto = criarElemento("div");
       boxDoProduto.classList.add("box-produto");
@@ -139,6 +143,31 @@ async function gerenciarCategoriasMercadorias() {
       <span class="observacao-produto">${observacaoProduto}</span>
       <span class="preco">${preco}</span>
       `;
+
+      boxDoProduto.addEventListener("click", async () => {
+        const payload = {
+          categoria: mercadoria.categoria,
+          produto: mercadoria.Codigo,
+          descricao: mercadoria.Descricao,
+          observacaoProduto: observacaoProduto,
+          preco: preco,
+        };
+
+        const resposta = await apiPost("selecionar-produto", payload);
+
+        if (resposta && resposta.status === "success") {
+          window.location.href = "selecionar.html";
+        } else {
+          console.error("Erro ao enviar dados para a API.");
+
+          Swal.fire({
+            text: "Ocorreu um erro ao selecionar o produto. Tente novamente.",
+            icon: "error",
+            backdrop: "rgba(0,0,0,0.7)",
+            confirmButtonColor: "#c00",
+          });
+        }
+      });
 
       boxDoProduto.append(produtoItem, imagemItem);
       sectionProdutos.appendChild(boxDoProduto);
@@ -245,12 +274,14 @@ async function gerenciarPedidosAnteriores() {
   if (abrirFooter && footer) {
     abrirFooter.addEventListener("click", () => {
       footer.classList.add("footer-aberto");
+      document.body.classList.add("no-scroll");
     });
   }
 
   if (fecharFooter && footer) {
     fecharFooter.addEventListener("click", () => {
       footer.classList.remove("footer-aberto");
+      document.body.classList.remove("no-scroll");
     });
   }
 
@@ -322,10 +353,11 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
     }
   });
 
-  conteudoHtml += `<li><span>Total do Pedido:</span> <span>${Number(
-    totalPedido
-  ).toFixed(2)}</span></li>`;
   conteudoHtml += "</ul>";
+
+  conteudoHtml += `<p><span>Total do Pedido:</span> <span>${Number(
+    totalPedido
+  ).toFixed(2)}</span></p>`;
 
   Swal.fire({
     title: dataHora,
@@ -337,8 +369,45 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
 
 //========================================================================================//
 
-async function testeSelecionar() {
-  console.log("teste");
+async function gerenciarProdutoSelecionado() {
+  const produtoSelecionado = await carregarProdutoSelecionado();
+
+  const tituloProduto = capturar(".box-produto h3");
+  const descricaoProduto = capturar(".box-produto small");
+  const precoProduto = capturar(".box-produto .agrupar span");
+  const btnMinusPrincipal = capturar(".box-produto .agrupar .fa-minus-circle");
+  const btnPlusPrincipal = capturar(".box-produto .agrupar .fa-plus-circle");
+  const inputQtdPrincipal = capturar(".box-produto .agrupar input");
+
+  if (tituloProduto) {
+    tituloProduto.textContent = produtoSelecionado.produto.descricao;
+  }
+
+  if (descricaoProduto) {
+    descricaoProduto.textContent = produtoSelecionado.produto.observacaoProduto;
+  }
+
+  if (precoProduto) {
+    precoProduto.textContent = produtoSelecionado.produto.preco;
+  }
+
+  if (btnMinusPrincipal && btnPlusPrincipal && inputQtdPrincipal) {
+    btnMinusPrincipal.addEventListener("click", () => {
+      const valorAtual = Number(inputQtdPrincipal.value);
+
+      if (valorAtual > 1) {
+        inputQtdPrincipal.value = valorAtual - 1;
+      }
+    });
+
+    btnPlusPrincipal.addEventListener("click", () => {
+      const valorAtual = Number(inputQtdPrincipal.value);
+
+      inputQtdPrincipal.value = valorAtual + 1;
+
+      console.log();
+    });
+  }
 }
 
 //========================================================================================//
@@ -348,5 +417,5 @@ document.addEventListener("DOMContentLoaded", () => {
   gerenciarCategoriasMercadorias();
   gerenciarAside();
   gerenciarPedidosAnteriores();
-  testeSelecionar();
+  gerenciarProdutoSelecionado();
 });

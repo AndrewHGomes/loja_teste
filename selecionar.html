@@ -27,15 +27,21 @@
       <img src="" alt="" />
     </header>
     <main>
-      <form method="post">
+      <section id="produto-box">
         <div class="box-produto">
-          <h3>Produto</h3>
-          <h5>Descrição</h5>
+          <h3></h3>
+          <small></small>
           <div class="agrupar">
-            <span>teste</span>
+            <span></span>
             <div>
               <i class="fa-solid fa-minus-circle"></i>
-              <input type="number" value="0" />
+              <input
+                type="number"
+                id="qtd-principal"
+                value="1"
+                min="1"
+                readonly
+              />
               <i class="fa-solid fa-plus-circle"></i>
             </div>
           </div>
@@ -44,7 +50,7 @@
           <legend>Observação</legend>
           <textarea name="" id=""></textarea>
         </fieldset>
-      </form>
+      </section>
     </main>
   </body>
 </html>
