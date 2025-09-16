@@ -4491,3 +4491,166 @@ A lógica de processamento dos dados, antes no app.js, foi movida para a funçã
 Em resumo, o que começou com um pequeno erro de sintaxe evoluiu para uma revisão completa da sua arquitetura, tornando o código mais seguro, eficiente, organizado e com uma melhor separação de responsabilidades entre o front-end e o back-end.
 
 Para continuar de onde paramos, você pode pegar o código que eu te dei para o api.js e o api.php e testar a funcionalidade completa de listar e exibir os detalhes dos pedidos.
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Vamos refazer o resumo para incluir essa nova estrutura de código, deixando o plano de ação ainda mais preciso. A sua nova lógica de criação dos elementos boxDoProduto, imagemItem e produtoItem está mais limpa e pronta para receber o event listener.
+
+Resumo e Plano de Ação
+O objetivo é enviar dados de um produto da página principal para uma página de detalhes (selecionar.html), usando sua API e a sessão do PHP para gerenciar o estado da compra. Para isso, vamos abandonar a submissão de formulário tradicional e adotar uma abordagem assíncrona.
+
+1. No Frontend (main.js):
+Primeiro, vamos adaptar sua função gerenciarCategoriasMercadorias para que cada item de produto possa ser clicado e enviar os dados para a sua API.
+
+JavaScript
+
+async function gerenciarCategoriasMercadorias() {
+  const produtos = await carregarProdutos();
+  const categorias = await carregarCategorias();
+
+  const navCategorias = capturar(".nav-categorias");
+  const sectionProdutos = capturar("#produtos");
+
+  if (!navCategorias || !sectionProdutos) {
+    return;
+  }
+
+  categorias.forEach((categoria) => {
+    const linkCategoria = document.createElement("a");
+    linkCategoria.href = `#${categoria.descricao}`;
+    linkCategoria.textContent = categoria.descricao;
+    navCategorias.insertAdjacentElement("beforeend", linkCategoria);
+  });
+
+  categorias.forEach((categoria) => {
+    const h3Categoria = document.createElement("h3");
+    h3Categoria.id = categoria.descricao;
+    h3Categoria.textContent = categoria.descricao;
+    sectionProdutos.insertAdjacentElement("beforeend", h3Categoria);
+
+    const produtosDaCategoria = produtos.filter(
+      (item) => item.categoria === categoria.descricao
+    );
+
+    produtosDaCategoria.forEach((mercadoria) => {
+      const preco =
+        mercadoria.pizza === "S"
+          ? ""
+          : `R$ ${parseFloat(mercadoria.Venda).toFixed(2)}`;
+
+      const observacaoProduto =
+        categoria.descricao === "BEBIDAS" ? "" : mercadoria.Descricao;
+
+      const boxDoProduto = criarElemento("div");
+      boxDoProduto.classList.add("box-produto");
+
+      const imagemItem = criarElemento("div");
+      imagemItem.classList.add("imagem-item");
+
+      imagemItem.innerHTML = `<img src="" alt="produto" />`;
+
+      const produtoItem = criarElemento("div");
+      produtoItem.classList.add("produto-item");
+
+      produtoItem.innerHTML = `
+        <span class="descricao">${mercadoria.Descricao}</span>
+        <span class="observacao-produto">${observacaoProduto}</span>
+        <span class="preco">${preco}</span>
+      `;
+      
+      // Adicionar o event listener aqui
+      boxDoProduto.addEventListener("click", async () => {
+        const payload = {
+          categoria: mercadoria.categoria,
+          produto: mercadoria.Codigo,
+          descricao: mercadoria.Descricao,
+          // Adicione outros dados se for relevante
+        };
+
+        const resposta = await apiPost("selecionar-produto", payload);
+
+        if (resposta && resposta.status === "success") {
+          window.location.href = "selecionar.html";
+        } else {
+          console.error("Erro ao enviar dados para a API.");
+          Swal.fire({
+            text: "Ocorreu um erro ao selecionar o produto. Tente novamente.",
+            icon: "error",
+            backdrop: "rgba(0,0,0,0.7)",
+            confirmButtonColor: "#c00",
+          });
+        }
+      });
+
+      boxDoProduto.append(produtoItem, imagemItem);
+      sectionProdutos.appendChild(boxDoProduto);
+    });
+  });
+}
+2. No Backend (api.php):
+Você precisará adicionar os cases para gerenciar a seleção e busca dos dados na sessão.
+
+PHP
+
+// ... dentro do bloco POST do switch($recurso) ...
+
+case 'selecionar-produto':
+    $json_payload = file_get_contents('php://input');
+    $payload = json_decode($json_payload, true);
+
+    if (isset($payload['produto']) && isset($payload['descricao'])) {
+        // Salva os dados do produto na sessão
+        $_SESSION['produto_selecionado'] = $payload;
+        $dados = ['status' => 'success', 'message' => 'Dados do produto armazenados na sessão.'];
+    } else {
+        $response_code = 400;
+        $dados = ['status' => 'error', 'message' => 'Dados do produto inválidos.'];
+    }
+    break;
+    
+// ... dentro do bloco GET do switch($recurso) ...
+
+case 'obter-produto-selecionado':
+    if (isset($_SESSION['produto_selecionado'])) {
+        $dados = ['status' => 'success', 'produto' => $_SESSION['produto_selecionado']];
+    } else {
+        $response_code = 404;
+        $dados = ['status' => 'error', 'message' => 'Nenhum produto selecionado na sessão.'];
+    }
+    break;
+3. Na Página de Detalhes (selecionar.html):
+Você precisará de um script para carregar os dados salvos na sessão, usando o novo endpoint de GET.
+
+JavaScript
+
+// Exemplo de script em selecionar.html
+import { apiGet } from "./api.js";
+
+async function carregarDadosProdutoSelecionado() {
+    const resposta = await apiGet("obter-produto-selecionado");
+
+    if (resposta.status === "success" && resposta.produto) {
+        const produto = resposta.produto;
+        // Agora você pode usar os dados do produto para preencher a página
+        console.log("Produto selecionado:", produto);
+
+        // Exemplo:
+        const tituloProduto = document.getElementById("titulo-produto");
+        if (tituloProduto) {
+            tituloProduto.textContent = produto.descricao;
+        }
+
+        // Faça o mesmo para outros elementos da página
+    } else {
+        console.error("Erro ou nenhum produto selecionado.");
+        // Opcional: Redirecionar de volta ou mostrar uma mensagem de erro
+        window.location.href = "index.html";
+    }
+}
+
+// Chame a função quando a página carregar
+document.addEventListener("DOMContentLoaded", () => {
+    carregarDadosProdutoSelecionado();
+});
+
+Esse plano de ação, que inclui seus códigos, cobre todo o fluxo necessário para que a seleção de um produto na página principal funcione corretamente e seus dados sejam transportados para a página de detalhes.

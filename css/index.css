@@ -61,7 +61,7 @@ main {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5em;
+  gap: 0.7em;
 }
 
 #informacoes .info.cidade {
@@ -123,16 +123,19 @@ main {
   font-weight: bold;
 }
 
-#produtos .produto-item {
+#produtos .box-produto {
   border: 1px solid #ddd;
   border-radius: 2px;
   box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.1);
-}
-
-#produtos .produto-item label {
   padding: 0.5em;
   width: 100%;
-  word-wrap: break-word;
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+}
+
+#produtos .box-produto .produto-item {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -143,6 +146,21 @@ main {
 #produtos .produto-item span {
   color: #333;
   font-weight: bold;
+}
+
+#produtos .box-produto .produto-item .observacao-produto {
+  font-weight: normal;
+  color: #777;
+  font-size: 0.8em;
+  word-wrap: break-word;
+}
+
+#produtos .box-produto .produto-item .preco {
+  color: #080;
+}
+
+#produtos .box-produto .imagem-item {
+  flex: 1;
 }
 
 aside {

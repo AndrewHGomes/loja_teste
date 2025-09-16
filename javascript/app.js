@@ -58,9 +58,9 @@ async function gerenciarInfoEmpresa() {
 
       infoStatus[1].addEventListener("click", () => {
         Swal.fire({
-          text: `${
-            empresa.parametros.ativaentrega === "N" ? "NÃO ESTAMOS" : "ESTAMOS"
-          } ENTREGANDO`,
+          text: `ENTREGA ESTÁ ${
+            empresa.parametros.ativaentrega === "N" ? "DESATIVADA" : "ATIVA"
+          }`,
           icon: empresa.parametros.ativaentrega === "S" ? "success" : "error",
           backdrop: "rgba(0,0,0,0.7)",
           confirmButtonColor:
@@ -120,23 +120,28 @@ async function gerenciarCategoriasMercadorias() {
           ? ""
           : `R$ ${parseFloat(mercadoria.Venda).toFixed(2)}`;
 
-      const formProdutos = document.createElement("form");
-      formProdutos.classList.add("produto-item");
-      formProdutos.setAttribute("method", "post");
-      formProdutos.setAttribute("action", "selecionar.html");
+      const observacaoProduto =
+        categoria.descricao === "BEBIDAS" ? "" : mercadoria.Descricao;
 
-      formProdutos.innerHTML = `
-        <label for="btn${mercadoria.Codigo}">
-          <input type="hidden" name="categoria" value="${mercadoria.categoria}">
-          <input type="hidden" name="produto" value="${mercadoria.Codigo}" readonly>
-          <input type="hidden" name="descricao" value="${mercadoria.Descricao}" readonly>
-          <span class="descricao">${mercadoria.Descricao}</span>
-          <span class="price">${preco}</span>
-        </label>
-        <button class="invisible" id="btn${mercadoria.Codigo}"></button>
+      const boxDoProduto = criarElemento("div");
+      boxDoProduto.classList.add("box-produto");
+
+      const imagemItem = criarElemento("div");
+      imagemItem.classList.add("imagem-item");
+
+      imagemItem.innerHTML = `<img src="" alt="produto" />`;
+
+      const produtoItem = criarElemento("div");
+      produtoItem.classList.add("produto-item");
+
+      produtoItem.innerHTML = `
+      <span class="descricao">${mercadoria.Descricao}</span>
+      <span class="observacao-produto">${observacaoProduto}</span>
+      <span class="preco">${preco}</span>
       `;
 
-      sectionProdutos.insertAdjacentElement("beforeend", formProdutos);
+      boxDoProduto.append(produtoItem, imagemItem);
+      sectionProdutos.appendChild(boxDoProduto);
     });
   });
 }
@@ -332,9 +337,16 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
 
 //========================================================================================//
 
+async function testeSelecionar() {
+  console.log("teste");
+}
+
+//========================================================================================//
+
 document.addEventListener("DOMContentLoaded", () => {
   gerenciarInfoEmpresa();
   gerenciarCategoriasMercadorias();
   gerenciarAside();
   gerenciarPedidosAnteriores();
+  testeSelecionar();
 });
