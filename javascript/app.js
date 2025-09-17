@@ -153,7 +153,7 @@ async function gerenciarCategoriasMercadorias() {
           descricao: mercadoria.Descricao,
           observacaoProduto: observacaoProduto,
           preco: preco,
-          imgProduto: imagemItem.innerHTML,
+          imgProduto: urlImagemProduto,
         };
 
         const resposta = await apiPost("selecionar-produto", payload);
@@ -185,22 +185,30 @@ async function gerenciarAside() {
   const horarios = await carregarHorarios();
 
   const h3Aside = capturar("aside h3");
-  if (h3Aside)
+  if (h3Aside) {
     h3Aside.textContent = `${empresa.empresa.Endereco}, ${empresa.empresa.Numero}`;
+  }
 
   const h4Aside = capturar("aside h4");
-  if (h4Aside) h4Aside.textContent = `${empresa.empresa.Bairro}`;
+  if (h4Aside) {
+    h4Aside.textContent = `${empresa.empresa.Bairro}`;
+  }
 
   const tdPreparo = capturar(".tabela1 td:nth-of-type(1)");
-  if (tdPreparo) tdPreparo.textContent = empresa.parametros.tempoentrega;
+  if (tdPreparo) {
+    tdPreparo.textContent = empresa.parametros.tempoentrega;
+  }
 
   const tdRetirar = capturar(".tabela1 td:nth-of-type(2)");
-  if (tdRetirar) tdRetirar.textContent = "SIM";
+  if (tdRetirar) {
+    tdRetirar.textContent = "SIM";
+  }
 
   const tdEntregar = capturar(".tabela1 td:nth-of-type(3)");
-  if (tdEntregar)
+  if (tdEntregar) {
     tdEntregar.textContent =
       empresa.parametros.ativaentrega === "S" ? "SIM" : "NÃO";
+  }
 
   const tabelaHorarios = capturar(".tabela2 tbody");
 
@@ -211,18 +219,26 @@ async function gerenciarAside() {
       const tr = document.createElement("tr");
 
       const tdDia = document.createElement("td");
-      tdDia.textContent = diasDaSemana[index];
-      tr.appendChild(tdDia);
+      if (tdDia) {
+        tdDia.textContent = diasDaSemana[index];
+        tr.appendChild(tdDia);
+      }
 
       const tdAbertura = document.createElement("td");
-      tdAbertura.textContent = item.abertura;
-      tr.appendChild(tdAbertura);
+      if (tdAbertura) {
+        tdAbertura.textContent = item.abertura;
+        tr.appendChild(tdAbertura);
+      }
 
       const tdFechamento = document.createElement("td");
-      tdFechamento.textContent = item.fechamento;
-      tr.appendChild(tdFechamento);
+      if (tdFechamento) {
+        tdFechamento.textContent = item.fechamento;
+        tr.appendChild(tdFechamento);
+      }
 
-      tabelaHorarios.appendChild(tr);
+      if (tabelaHorarios) {
+        tabelaHorarios.appendChild(tr);
+      }
     });
   }
 
@@ -332,7 +348,7 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
   let conteudoHtml = "<ul>";
 
   detalhesPedidosAnteriores.forEach((obj) => {
-    dataHora = `${obj.Data} ${obj.Hora}`;
+    dataHora = `${obj.Data} - ${obj.Hora}`;
     totalPedido = obj.totalpedido;
 
     if (obj.Complementos && Array.isArray(obj.Complementos)) {
@@ -363,8 +379,7 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
   ).toFixed(2)}</span></p>`;
 
   Swal.fire({
-    title: dataHora,
-    html: conteudoHtml,
+    html: `${dataHora} ${conteudoHtml}`,
     backdrop: "rgba(0,0,0,0.7)",
     confirmButtonColor: "#080",
   });
@@ -377,15 +392,27 @@ async function gerenciarProdutoSelecionado() {
   console.log(produtoSelecionado);
 
   const imgProdutoHeader = capturar("header img");
+  const iconeLupa = capturar(".fa-magnifying-glass-plus");
   const tituloProduto = capturar(".box-produto h3");
   const descricaoProduto = capturar(".box-produto small");
   const precoProduto = capturar(".box-produto .agrupar span");
   const btnMinusPrincipal = capturar(".box-produto .agrupar .fa-minus-circle");
   const btnPlusPrincipal = capturar(".box-produto .agrupar .fa-plus-circle");
   const inputQtdPrincipal = capturar(".box-produto .agrupar input");
+  const areaObservacaoCliente = capturar("#observacao-cliente");
+  const btnAdicionar = capturar("#btn-adicionar");
 
-  if (imgProdutoHeader) {
+  if (imgProdutoHeader && produtoSelecionado.produto.imgProduto) {
     imgProdutoHeader.src = produtoSelecionado.produto.imgProduto;
+
+    iconeLupa?.addEventListener("click", () => {
+      Swal.fire({
+        title: produtoSelecionado.produto.observacaoProduto,
+        html: `<img src="${produtoSelecionado.produto.imgProduto}" />`,
+        backdrop: "rgba(0,0,0,0.7)",
+        confirmButtonColor: "#080",
+      });
+    });
   }
 
   if (tituloProduto) {
@@ -403,7 +430,6 @@ async function gerenciarProdutoSelecionado() {
   if (btnMinusPrincipal && btnPlusPrincipal && inputQtdPrincipal) {
     btnMinusPrincipal.addEventListener("click", () => {
       const valorAtual = Number(inputQtdPrincipal.value);
-
       if (valorAtual > 1) {
         inputQtdPrincipal.value = valorAtual - 1;
       }
@@ -411,12 +437,30 @@ async function gerenciarProdutoSelecionado() {
 
     btnPlusPrincipal.addEventListener("click", () => {
       const valorAtual = Number(inputQtdPrincipal.value);
-
       inputQtdPrincipal.value = valorAtual + 1;
-
-      console.log();
     });
   }
+
+  btnAdicionar?.addEventListener("click", async () => {
+    if (inputQtdPrincipal && areaObservacaoCliente) {
+      const quantidade = Number(inputQtdPrincipal.value);
+      const observacaoCliente = areaObservacaoCliente.value;
+
+      const montandoCarrinho = {
+        ...produtoSelecionado.produto,
+        quantidade: quantidade,
+        observacaoCliente: observacaoCliente,
+      };
+
+      const resposta = await apiPost("adicionar-ao-carrinho", montandoCarrinho);
+
+      if (resposta && resposta.status === "success") {
+        console.log(montandoCarrinho);
+        areaObservacaoCliente.value = "";
+        inputQtdPrincipal.value = 1;
+      }
+    }
+  });
 }
 
 //========================================================================================//

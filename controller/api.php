@@ -113,6 +113,20 @@ try {
           $dados = ['status' => 'error', 'message' => 'Dados do produto inválidos.'];
         }
         break;
+      case 'adicionar-ao-carrinho':
+        $json_payload = file_get_contents('php://input');
+        $payload = json_decode($json_payload, true);
+        if (isset($payload) && !empty($payload)) {
+          if (!isset($_SESSION['carrinho'])) {
+            $_SESSION['carrinho'] = [];
+          }
+          $_SESSION['carrinho'][] = $payload;
+          $dados = ['status' => 'success', 'message' => 'Produto adicionado ao carrinho.'];
+        } else {
+          $response_code = 400;
+          $dados = ['status' => 'error', 'message' => 'Dados do produto inválidos para o carrinho.'];
+        }
+        break;
       default:
         $response_code = 400;
         $dados = ['message' => 'Recurso POST não especificado.'];
