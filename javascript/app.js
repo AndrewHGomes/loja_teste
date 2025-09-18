@@ -7,6 +7,7 @@ import {
   carregarPedidosAnteriores,
   carregarDetalhesPedidosAnteriores,
   carregarProdutoSelecionado,
+  carregarCarrinho,
 } from "./produtos.js";
 
 import { capturar, criarElemento } from "./capturar.js";
@@ -121,7 +122,7 @@ async function gerenciarCategoriasMercadorias() {
       const preco =
         mercadoria.pizza === "S"
           ? ""
-          : `R$ ${parseFloat(mercadoria.Venda).toFixed(2)}`;
+          : `${Number(mercadoria.Venda).toFixed(2)}`;
 
       const observacaoProduto = mercadoria.Observacao
         ? mercadoria.Observacao
@@ -143,7 +144,7 @@ async function gerenciarCategoriasMercadorias() {
       produtoItem.innerHTML = `
       <span class="descricao">${mercadoria.Descricao}</span>
       <span class="observacao-produto">${observacaoProduto}</span>
-      <span class="preco">${preco}</span>
+      <span class="preco">R$ ${preco}</span>
       `;
 
       boxDoProduto.addEventListener("click", async () => {
@@ -281,6 +282,8 @@ async function gerenciarAside() {
   }
 }
 
+//========================================================================================//
+
 async function gerenciarPedidosAnteriores() {
   const foneDoUsuario = "5519989716177";
   const pedidosAnteriores = await carregarPedidosAnteriores(foneDoUsuario);
@@ -337,6 +340,8 @@ async function gerenciarPedidosAnteriores() {
   }
 }
 
+//========================================================================================//
+
 async function mostrarDetalhesPedidosAnteriores(codigo) {
   const detalhesPedidosAnteriores = await carregarDetalhesPedidosAnteriores(
     codigo
@@ -389,7 +394,6 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
 
 async function gerenciarProdutoSelecionado() {
   const produtoSelecionado = await carregarProdutoSelecionado();
-  console.log(produtoSelecionado);
 
   const imgProdutoHeader = capturar("header img");
   const iconeLupa = capturar(".fa-magnifying-glass-plus");
@@ -424,7 +428,7 @@ async function gerenciarProdutoSelecionado() {
   }
 
   if (precoProduto) {
-    precoProduto.textContent = produtoSelecionado.produto.preco;
+    precoProduto.textContent = `R$ ${produtoSelecionado.produto.preco}`;
   }
 
   if (btnMinusPrincipal && btnPlusPrincipal && inputQtdPrincipal) {
@@ -445,9 +449,15 @@ async function gerenciarProdutoSelecionado() {
     if (inputQtdPrincipal && areaObservacaoCliente) {
       const quantidade = Number(inputQtdPrincipal.value);
       const observacaoCliente = areaObservacaoCliente.value;
+      const intervaloDoPreco = produtoSelecionado.produto.preco.indexOf(" ");
+      const numberPreco = (
+        Number(produtoSelecionado.produto.preco.slice(intervaloDoPreco)) *
+        quantidade
+      ).toFixed(2);
 
       const montandoCarrinho = {
         ...produtoSelecionado.produto,
+        preco: numberPreco,
         quantidade: quantidade,
         observacaoCliente: observacaoCliente,
       };
@@ -456,10 +466,73 @@ async function gerenciarProdutoSelecionado() {
 
       if (resposta && resposta.status === "success") {
         console.log(montandoCarrinho);
+        window.location.href = "./carrinho.html";
         areaObservacaoCliente.value = "";
-        inputQtdPrincipal.value = 1;
       }
     }
+  });
+  console.log(produtoSelecionado);
+}
+
+//========================================================================================//
+
+async function gerenciarCarrinho() {
+  const carrinho = await carregarCarrinho();
+  const iconeLixeira = capturar("#nav-voltar .fa-trash");
+  const sectionProdutoBox = capturar("#produto-box");
+
+  iconeLixeira?.addEventListener("click", () => {
+    Swal.fire({
+      title: "Limpar Carrinho?",
+      text: "Você não poderá reverter esta ação depois!",
+      icon: "question",
+      backdrop: "rgba(0,0,0,0.7)",
+      showCancelButton: true,
+      confirmButtonText: "Sim, continuar",
+      confirmButtonColor: "#080",
+      cancelButtonText: "Não, cancelar",
+      cancelButtonColor: "#c00",
+    }).then(async (resultado) => {
+      if (resultado.isConfirmed) {
+        const resposta = await apiPost("limpar-carrinho");
+
+        if (resposta && resposta.status === "success") {
+          Swal.fire(
+            "Limpeza Confirmada!",
+            "O Carrinho foi Limpo com Sucesso.",
+            "success",
+            "rgba(0,0,0,0.7)",
+            "#080"
+          );
+
+          window.location.href = "./index.html";
+        } else {
+          Swal.fire(
+            "Erro!",
+            "Não foi possível limpar o carrinho. Tente novamente.",
+            "error",
+            "rgba(0,0,0,0.7)",
+            "#080"
+          );
+        }
+      } else if (resultado.dismiss === Swal.DismissReason.cancel) {
+        Swal.fire(
+          "Limpeza Cancelada",
+          "A sua ação foi interrompida.",
+          "info",
+          "rgba(0,0,0,0.7)",
+          "#c00"
+        );
+      }
+    });
+  });
+
+  carrinho.carrinho.forEach((produto) => {
+    console.log(produto);
+
+    const divCadaProduto = criarElemento("div");
+
+    sectionProdutoBox.append(divCadaProduto);
   });
 }
 
@@ -471,4 +544,5 @@ document.addEventListener("DOMContentLoaded", () => {
   gerenciarAside();
   gerenciarPedidosAnteriores();
   gerenciarProdutoSelecionado();
+  gerenciarCarrinho();
 });

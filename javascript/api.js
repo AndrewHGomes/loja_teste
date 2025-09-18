@@ -15,7 +15,7 @@ export async function apiGet(endpoint) {
     return await resposta.json();
   } catch (erro) {
     console.error("Erro ao buscar dados (GET):", erro);
-    return { status: "error", data: [] };
+    return { status: "error", dados: [] };
   }
 }
 
@@ -36,6 +36,6 @@ export async function apiPost(endpoint, payload = {}) {
     return await resposta.json();
   } catch (erro) {
     console.error("Erro ao enviar dados (POST):", erro);
-    return { status: "error", data: [] };
+    return { status: "error", dados: [] };
   }
 }

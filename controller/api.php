@@ -14,7 +14,6 @@ try {
   $response_code = 200;
 
   if ($metodo === 'GET') {
-
     switch ($recurso) {
       case 'empresa':
         $empresa = new Empresa();
@@ -91,8 +90,14 @@ try {
         if (isset($_SESSION['produto_selecionado'])) {
           $dados = ['status' => 'success', 'produto' => $_SESSION['produto_selecionado']];
         } else {
-          $response_code = 404;
-          $dados = ['status' => 'error', 'message' => 'Nenhum produto selecionado na sessão.'];
+          $dados = ['status' => 'success', 'message' => 'Nenhum produto selecionado na sessão.', 'produto' => null];
+        }
+        break;
+      case 'pegar-carrinho':
+        if (isset($_SESSION['carrinho']) && !empty($_SESSION['carrinho'])) {
+          $dados = ['status' => 'success', 'carrinho' => $_SESSION['carrinho']];
+        } else {
+          $dados = ['status' => 'success', 'message' => 'Carrinho está vazio.', 'carrinho' => []];
         }
         break;
       default:
@@ -100,7 +105,6 @@ try {
         $dados = ['message' => 'Recurso GET não especificado.'];
     }
   } elseif ($metodo === 'POST') {
-
     switch ($recurso) {
       case 'selecionar-produto':
         $json_payload = file_get_contents('php://input');
@@ -125,6 +129,14 @@ try {
         } else {
           $response_code = 400;
           $dados = ['status' => 'error', 'message' => 'Dados do produto inválidos para o carrinho.'];
+        }
+        break;
+      case 'limpar-carrinho':
+        if (isset($_SESSION['carrinho'])) {
+          unset($_SESSION['carrinho']);
+          $dados = ['status' => 'success', 'message' => 'Carrinho limpo com sucesso.'];
+        } else {
+          $dados = ['status' => 'success', 'message' => 'O carrinho já está vazio.'];
         }
         break;
       default:

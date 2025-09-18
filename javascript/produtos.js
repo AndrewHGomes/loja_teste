@@ -51,3 +51,13 @@ export async function carregarProdutoSelecionado() {
 
   return {};
 }
+
+export async function carregarCarrinho() {
+  const carrinho = await apiGet("pegar-carrinho");
+
+  if (carrinho) {
+    return carrinho;
+  }
+
+  return {};
+}
