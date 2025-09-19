@@ -61,13 +61,17 @@ header .fa-magnifying-glass-plus {
   width: 100%;
 }
 
-#produto-box {
+#produto-box-carrinho {
+  color: #333;
+  font-weight: bold;
   padding: 0.5em;
 }
 
-#produto-box .div-cada-produto {
+#produto-box-carrinho .div-cada-produto {
   display: flex;
   justify-content: space-between;
+  padding: 0.5em 0;
+  border-bottom: 1px solid #cfcfcf;
 }
 
 #section-botoes {

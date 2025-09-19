@@ -17,6 +17,8 @@ class Produtos
     }
   }
 
+  //===============================================================================
+
   public function pegarTodosOsProdutos()
   {
     try {
@@ -35,6 +37,8 @@ class Produtos
     }
   }
 
+  //===============================================================================
+
   public function pegarCategorias()
   {
     try {
@@ -49,6 +53,8 @@ class Produtos
       return [];
     }
   }
+
+  //===============================================================================
 
   public function pegarDetalhesDosProdutos($codigo)
   {
@@ -72,6 +78,8 @@ class Produtos
     }
   }
 
+  //===============================================================================
+
   public function pegarTamanhosDosProdutos($codigo)
   {
     try {
@@ -87,6 +95,8 @@ class Produtos
       return [];
     }
   }
+
+  //===============================================================================
 
   public function pegarIngredientesDosProdutos($codigo)
   {
@@ -105,6 +115,8 @@ class Produtos
     }
   }
 
+  //===============================================================================
+
   public function pegarBordas()
   {
     try {
@@ -120,6 +132,8 @@ class Produtos
       return [];
     }
   }
+
+  //===============================================================================
 
   public function pegarPedidosAnteriores($fone)
   {
@@ -137,6 +151,8 @@ class Produtos
       return [];
     }
   }
+
+  //===============================================================================
 
   public function pegarDetalhesPedidosAnteriores($cod)
   {

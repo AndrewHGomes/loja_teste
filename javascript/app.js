@@ -153,7 +153,7 @@ async function gerenciarCategoriasMercadorias() {
           produto: mercadoria.Codigo,
           descricao: mercadoria.Descricao,
           observacaoProduto: observacaoProduto,
-          preco: preco,
+          preco: Number(mercadoria.Venda).toFixed(2),
           imgProduto: urlImagemProduto,
         };
 
@@ -406,12 +406,12 @@ async function gerenciarProdutoSelecionado() {
   const areaObservacaoCliente = capturar("#observacao-cliente");
   const btnAdicionar = capturar("#btn-adicionar");
 
-  if (imgProdutoHeader && produtoSelecionado.produto.imgProduto) {
+  if (imgProdutoHeader && produtoSelecionado.produto?.imgProduto) {
     imgProdutoHeader.src = produtoSelecionado.produto.imgProduto;
 
     iconeLupa?.addEventListener("click", () => {
       Swal.fire({
-        title: produtoSelecionado.produto.observacaoProduto,
+        title: produtoSelecionado.produto.descricao,
         html: `<img src="${produtoSelecionado.produto.imgProduto}" />`,
         backdrop: "rgba(0,0,0,0.7)",
         confirmButtonColor: "#080",
@@ -449,15 +449,12 @@ async function gerenciarProdutoSelecionado() {
     if (inputQtdPrincipal && areaObservacaoCliente) {
       const quantidade = Number(inputQtdPrincipal.value);
       const observacaoCliente = areaObservacaoCliente.value;
-      const intervaloDoPreco = produtoSelecionado.produto.preco.indexOf(" ");
-      const numberPreco = (
-        Number(produtoSelecionado.produto.preco.slice(intervaloDoPreco)) *
-        quantidade
-      ).toFixed(2);
+      const precoUnitario = Number(produtoSelecionado.produto.preco);
+      const precoTotal = (precoUnitario * quantidade).toFixed(2);
 
       const montandoCarrinho = {
         ...produtoSelecionado.produto,
-        preco: numberPreco,
+        preco: precoTotal,
         quantidade: quantidade,
         observacaoCliente: observacaoCliente,
       };
@@ -478,67 +475,67 @@ async function gerenciarProdutoSelecionado() {
 async function gerenciarCarrinho() {
   const carrinho = await carregarCarrinho();
   const iconeLixeira = capturar("#nav-voltar .fa-trash");
-  const sectionProdutoBox = capturar("#produto-box");
+  const sectionProdutoBox = capturar("#produto-box-carrinho");
 
-  iconeLixeira?.addEventListener("click", () => {
-    Swal.fire({
+  function renderizarProdutos(produtos) {
+    if (!sectionProdutoBox) {
+      return;
+    }
+
+    sectionProdutoBox.innerHTML = "";
+
+    if (produtos.length > 0) {
+      produtos.forEach((produto) => {
+        const divCadaProduto = criarElemento("div");
+        divCadaProduto.classList.add("div-cada-produto");
+        const conteudoDiv = `
+          <span>${produto.quantidade}x ${produto.descricao}</span>
+          <span>R$ ${produto.preco}</span>
+        `;
+        divCadaProduto.innerHTML = conteudoDiv;
+        sectionProdutoBox.append(divCadaProduto);
+      });
+    } else {
+      sectionProdutoBox.innerHTML = "<span>O carrinho está vazio.</span>";
+    }
+  }
+
+  renderizarProdutos(carrinho.carrinho);
+
+  iconeLixeira?.addEventListener("click", async () => {
+    const resultado = await Swal.fire({
       title: "Limpar Carrinho?",
       text: "Você não poderá reverter esta ação depois!",
       icon: "question",
       backdrop: "rgba(0,0,0,0.7)",
       showCancelButton: true,
-      confirmButtonText: "Sim, continuar",
+      confirmButtonText: "Sim, limpar",
       confirmButtonColor: "#080",
       cancelButtonText: "Não, cancelar",
       cancelButtonColor: "#c00",
-    }).then(async (resultado) => {
-      if (resultado.isConfirmed) {
-        const resposta = await apiPost("limpar-carrinho");
+    });
 
-        if (resposta && resposta.status === "success") {
-          Swal.fire(
-            "Limpeza Confirmada!",
-            "O Carrinho foi Limpo com Sucesso.",
-            "success",
-            "rgba(0,0,0,0.7)",
-            "#080"
-          );
+    if (resultado.isConfirmed) {
+      const respostaApi = await apiPost("limpar-carrinho");
 
-          window.location.href = "./index.html";
-        } else {
-          Swal.fire(
-            "Erro!",
-            "Não foi possível limpar o carrinho. Tente novamente.",
-            "error",
-            "rgba(0,0,0,0.7)",
-            "#080"
-          );
-        }
-      } else if (resultado.dismiss === Swal.DismissReason.cancel) {
+      if (respostaApi.status === "success") {
         Swal.fire(
-          "Limpeza Cancelada",
-          "A sua ação foi interrompida.",
-          "info",
-          "rgba(0,0,0,0.7)",
-          "#c00"
+          "Carrinho Limpo!",
+          "Todos os itens foram removidos com sucesso.",
+          "success"
+        ).then(() => {
+          window.location.href = "./index.html";
+        });
+      } else {
+        Swal.fire(
+          "Erro",
+          respostaApi.message || "Não foi possível limpar o carrinho.",
+          "error"
         );
       }
-    });
-  });
-
-  carrinho.carrinho.forEach((produto) => {
-    console.log(produto);
-    const divCadaProduto = criarElemento("div");
-    divCadaProduto.classList.add("div-cada-produto");
-
-    const conteudoDiv = `
-    <span>${produto.quantidade}x ${produto.descricao}</span>
-    <span>R$ ${produto.preco}</span>
-    `;
-
-    divCadaProduto.innerHTML = conteudoDiv;
-
-    sectionProdutoBox?.append(divCadaProduto);
+    } else if (resultado.isDismissed) {
+      Swal.fire("Ação cancelada", "O carrinho não foi alterado.", "error");
+    }
   });
 }
 

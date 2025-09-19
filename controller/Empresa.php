@@ -17,6 +17,8 @@ class Empresa
     }
   }
 
+  //===========================================================================================
+
   public function pegarDadosDaEmpresa()
   {
     try {
@@ -46,6 +48,8 @@ class Empresa
     }
   }
 
+  //===========================================================================================
+
   public function pegarHorariosDaEmpresa()
   {
     try {
@@ -61,6 +65,8 @@ class Empresa
     }
   }
 
+  //===========================================================================================
+
   public function cidadesOndeEntrega()
   {
     try {
@@ -75,6 +81,8 @@ class Empresa
       return [];
     }
   }
+
+  //===========================================================================================
 
   public function pegarHorariosDeFuncionamento()
   {
@@ -125,6 +133,8 @@ class Empresa
       return ['status' => 'erro', 'motivo' => 'Erro interno do servidor.'];
     }
   }
+
+  //===========================================================================================
 
   public function mudarStatusDaLoja($novoStatus)
   {
