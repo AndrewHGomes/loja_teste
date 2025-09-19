@@ -471,7 +471,6 @@ async function gerenciarProdutoSelecionado() {
       }
     }
   });
-  console.log(produtoSelecionado);
 }
 
 //========================================================================================//
@@ -529,10 +528,17 @@ async function gerenciarCarrinho() {
 
   carrinho.carrinho.forEach((produto) => {
     console.log(produto);
-
     const divCadaProduto = criarElemento("div");
+    divCadaProduto.classList.add("div-cada-produto");
 
-    sectionProdutoBox.append(divCadaProduto);
+    const conteudoDiv = `
+    <span>${produto.quantidade}x ${produto.descricao}</span>
+    <span>R$ ${produto.preco}</span>
+    `;
+
+    divCadaProduto.innerHTML = conteudoDiv;
+
+    sectionProdutoBox?.append(divCadaProduto);
   });
 }
 

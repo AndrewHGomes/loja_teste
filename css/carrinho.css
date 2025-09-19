@@ -61,6 +61,15 @@ header .fa-magnifying-glass-plus {
   width: 100%;
 }
 
+#produto-box {
+  padding: 0.5em;
+}
+
+#produto-box .div-cada-produto {
+  display: flex;
+  justify-content: space-between;
+}
+
 #section-botoes {
   padding: 0.5em;
   display: flex;
@@ -68,10 +77,6 @@ header .fa-magnifying-glass-plus {
   align-items: center;
   justify-content: center;
   gap: 1em;
-}
-
-#produto-box {
-  padding: 0.5em;
 }
 
 #section-botoes a {
