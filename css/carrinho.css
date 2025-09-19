@@ -74,6 +74,10 @@ header .fa-magnifying-glass-plus {
   border-bottom: 1px solid #cfcfcf;
 }
 
+#produto-box-carrinho .div-cada-produto span .fa-ellipsis-vertical {
+  padding: 0.5em;
+}
+
 #section-botoes {
   padding: 0.5em;
   display: flex;
@@ -99,4 +103,6 @@ header .fa-magnifying-glass-plus {
 
 #section-botoes .btn-confirmar {
   background-color: #080;
+  display: flex;
+  justify-content: space-between;
 }

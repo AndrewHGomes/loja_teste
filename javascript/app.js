@@ -476,6 +476,7 @@ async function gerenciarCarrinho() {
   const carrinho = await carregarCarrinho();
   const iconeLixeira = capturar("#nav-voltar .fa-trash");
   const sectionProdutoBox = capturar("#produto-box-carrinho");
+  const btnConfirmar = capturar(".btn-confirmar");
 
   function renderizarProdutos(produtos) {
     if (!sectionProdutoBox) {
@@ -490,11 +491,19 @@ async function gerenciarCarrinho() {
         divCadaProduto.classList.add("div-cada-produto");
         const conteudoDiv = `
           <span>${produto.quantidade}x ${produto.descricao}</span>
-          <span>R$ ${produto.preco}</span>
+          <span>R$ ${produto.preco}  <i class="fa-solid fa-ellipsis-vertical"></i></span>
         `;
         divCadaProduto.innerHTML = conteudoDiv;
         sectionProdutoBox.append(divCadaProduto);
       });
+
+      const elipseLimpar = capturar(".fa-ellipsis-vertical", true);
+      elipseLimpar.forEach((elipse) => {
+        elipse.addEventListener("click", () => {
+          console.log(elipse);
+        });
+      });
+      console.log(elipseLimpar);
     } else {
       sectionProdutoBox.innerHTML = "<span>O carrinho está vazio.</span>";
     }
@@ -536,6 +545,10 @@ async function gerenciarCarrinho() {
     } else if (resultado.isDismissed) {
       Swal.fire("Ação cancelada", "O carrinho não foi alterado.", "error");
     }
+  });
+
+  btnConfirmar?.addEventListener("click", () => {
+    //
   });
 }
 

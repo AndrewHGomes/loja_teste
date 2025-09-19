@@ -74,6 +74,10 @@ header .fa-magnifying-glass-plus {
   gap: 0.5em;
 }
 
+#produto-box .box-produto small {
+  color: #777;
+}
+
 #produto-box .box-produto .agrupar {
   display: flex;
   align-items: center;
