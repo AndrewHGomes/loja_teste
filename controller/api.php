@@ -139,6 +139,23 @@ try {
           $dados = ['status' => 'success', 'message' => 'O carrinho já está vazio.'];
         }
         break;
+      case 'remover-item-carrinho':
+        $json_payload = file_get_contents('php://input');
+        $payload = json_decode($json_payload, true);
+        if (isset($payload['index'])) {
+          $index = $payload['index'];
+          if (isset($_SESSION['carrinho'][$index])) {
+            array_splice($_SESSION['carrinho'], $index, 1);
+            $dados = ['status' => 'success', 'message' => 'Produto removido do carrinho.'];
+          } else {
+            $response_code = 400;
+            $dados = ['status' => 'error', 'message' => 'Índice do produto inválido.'];
+          }
+        } else {
+          $response_code = 400;
+          $dados = ['status' => 'error', 'message' => 'Índice do produto não especificado.'];
+        }
+        break;
       default:
         $response_code = 400;
         $dados = ['message' => 'Recurso POST não especificado.'];

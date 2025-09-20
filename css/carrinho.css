@@ -78,6 +78,15 @@ header .fa-magnifying-glass-plus {
   padding: 0.5em;
 }
 
+.carrinho-vazio {
+  background-color: #efefef;
+  width: 18em;
+  padding: 0.5em;
+  margin: 0 auto;
+  text-align: center;
+  border-radius: 2px;
+}
+
 #section-botoes {
   padding: 0.5em;
   display: flex;
@@ -94,7 +103,7 @@ header .fa-magnifying-glass-plus {
   font-weight: bold;
   color: #fff;
   box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 #section-botoes .btn-continuar-comprando {

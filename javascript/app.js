@@ -497,22 +497,66 @@ async function gerenciarCarrinho() {
         sectionProdutoBox.append(divCadaProduto);
       });
 
-      const elipseLimpar = capturar(".fa-ellipsis-vertical", true);
-      elipseLimpar.forEach((elipse) => {
-        elipse.addEventListener("click", () => {
-          console.log(elipse);
+      const elipses = capturar(".fa-ellipsis-vertical", true);
+
+      elipses.forEach((elipse, index) => {
+        elipse.addEventListener("click", async () => {
+          const resultadoLimparItem = await Swal.fire({
+            title: "Excluir este item?",
+            text: "Você não poderá reverter esta ação depois!",
+            icon: "question",
+            backdrop: "rgba(0,0,0,0.7)",
+            showCancelButton: true,
+            confirmButtonText: "Sim, excluir",
+            confirmButtonColor: "#080",
+            cancelButtonText: "Não, cancelar",
+            cancelButtonColor: "#c00",
+          });
+
+          if (resultadoLimparItem.isConfirmed) {
+            const respostaApi = await apiPost("remover-item-carrinho", {
+              index: index,
+            });
+
+            if (respostaApi.status === "success") {
+              produtos.splice(index, 1);
+              Swal.fire(
+                "Item Removido!",
+                "O item foi removido com sucesso.",
+                "success"
+              ).then(() => {
+                if (produtos.length === 0) {
+                  sectionProdutoBox.innerHTML =
+                    "<p class='carrinho-vazio'>O carrinho está vazio.</p>";
+                  setTimeout(() => {
+                    window.location.href = "./index.html";
+                  }, 1500);
+                } else {
+                  renderizarProdutos(produtos);
+                }
+              });
+            } else {
+              Swal.fire(
+                "Erro",
+                "Não foi possível remover o item. Tente novamente.",
+                "error"
+              );
+            }
+          } else if (resultadoLimparItem.isDismissed) {
+            Swal.fire("Ação cancelada", "O item não foi alterado.", "error");
+          }
         });
       });
-      console.log(elipseLimpar);
     } else {
-      sectionProdutoBox.innerHTML = "<span>O carrinho está vazio.</span>";
+      sectionProdutoBox.innerHTML =
+        "<p class='carrinho-vazio'>O carrinho está vazio.</p>";
     }
   }
 
   renderizarProdutos(carrinho.carrinho);
 
   iconeLixeira?.addEventListener("click", async () => {
-    const resultado = await Swal.fire({
+    const resultadoLimparCarrinho = await Swal.fire({
       title: "Limpar Carrinho?",
       text: "Você não poderá reverter esta ação depois!",
       icon: "question",
@@ -524,7 +568,7 @@ async function gerenciarCarrinho() {
       cancelButtonColor: "#c00",
     });
 
-    if (resultado.isConfirmed) {
+    if (resultadoLimparCarrinho.isConfirmed) {
       const respostaApi = await apiPost("limpar-carrinho");
 
       if (respostaApi.status === "success") {
@@ -533,7 +577,9 @@ async function gerenciarCarrinho() {
           "Todos os itens foram removidos com sucesso.",
           "success"
         ).then(() => {
-          window.location.href = "./index.html";
+          setTimeout(() => {
+            window.location.href = "./index.html";
+          }, 1000);
         });
       } else {
         Swal.fire(
@@ -542,7 +588,7 @@ async function gerenciarCarrinho() {
           "error"
         );
       }
-    } else if (resultado.isDismissed) {
+    } else if (resultadoLimparCarrinho.isDismissed) {
       Swal.fire("Ação cancelada", "O carrinho não foi alterado.", "error");
     }
   });
