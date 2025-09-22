@@ -530,7 +530,7 @@ async function gerenciarCarrinho() {
                     "<p class='carrinho-vazio'>O carrinho está vazio.</p>";
                   setTimeout(() => {
                     window.location.href = "./index.html";
-                  }, 1500);
+                  }, 500);
                 } else {
                   renderizarProdutos(produtos);
                 }
@@ -579,7 +579,7 @@ async function gerenciarCarrinho() {
         ).then(() => {
           setTimeout(() => {
             window.location.href = "./index.html";
-          }, 1000);
+          }, 500);
         });
       } else {
         Swal.fire(
