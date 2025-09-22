@@ -14,10 +14,12 @@ if (isset($_GET['tel'])) {
   function DecryptString($valor)
   {
     $chave = 10;
-    $tamanho = strlen($valor);
     $retorno = "";
-    for ($i = 0; $i < $tamanho; $i++) {
-      $retorno .= chr(~(ord($valor[$i]) - $chave));
+
+    $valor_decodificado = utf8_decode($valor);
+
+    for ($i = 0; $i < strlen($valor_decodificado); $i++) {
+      $retorno .= chr(~(ord($valor_decodificado[$i]) - $chave));
     }
     return $retorno;
   }

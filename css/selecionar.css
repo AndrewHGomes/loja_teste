@@ -57,6 +57,10 @@ header .fa-magnifying-glass-plus {
   width: 100%;
 }
 
+/* main {
+  padding-bottom: 5em;
+} */
+
 #produto-box {
   padding: 0.5em;
 }
@@ -125,6 +129,45 @@ header .fa-magnifying-glass-plus {
   border: none;
   outline: none;
   width: 100%;
+}
+
+#section-complementos {
+  padding: 0.5em;
+  width: 100%;
+  padding-bottom: 5em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7em;
+}
+
+#section-complementos .div-complemento {
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  box-shadow: var(--sombra-box);
+  padding: 0.8em;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+#section-complementos .div-complemento .qtd-complemento {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#section-complementos .div-complemento .complemento-descricao-valor p {
+  font-weight: bold;
+}
+
+#section-complementos .div-complemento .qtd-complemento input {
+  border: none;
+  outline: none;
+  width: 2em;
+  font-size: 1em;
+  text-align: center;
+  padding: 0 0.1em;
 }
 
 footer {

@@ -31,6 +31,17 @@ try {
         $produtos = new Produtos();
         $dados = $produtos->pegarCategorias();
         break;
+      case 'complementos':
+        $codigos = isset($_GET['codigos']) ? $_GET['codigos'] : null;
+        if ($codigos) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarComplementos($codigos);
+          $response_code = 200;
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Códigos de complemento não especificados.'];
+        }
+        break;
       case 'detalhes-produtos':
         $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
         if ($cod) {

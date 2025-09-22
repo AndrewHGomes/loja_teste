@@ -6,21 +6,37 @@
 }
 
 body {
+  background-image: linear-gradient(#080, #ee2000);
   width: 100vw;
   height: 100dvh;
+  padding: 1em;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 1em;
-  overflow: hidden;
 }
 
-#logo {
+#container {
+  background-color: #fff;
+  width: 100%;
+  max-width: 400px;
+  padding: 1em;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#container #logo {
   width: 10em;
   border-radius: 5px;
 }
 
-#loading {
-  width: 100%;
+#container #loading {
+  width: 50%;
+}
+
+#container h2 {
+  color: #080;
 }

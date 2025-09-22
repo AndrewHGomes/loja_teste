@@ -20,6 +20,17 @@ export async function carregarCategorias() {
   return [];
 }
 
+export async function carregarComplementos(produtoPrincipal) {
+  const codigos = produtoPrincipal.RequerComplementoCod;
+
+  if (produtoPrincipal.RequerComplemento === "S" && codigos) {
+    const complementos = await apiGet(`complementos&codigos=${codigos}`);
+    return complementos;
+  }
+
+  return [];
+}
+
 export async function carregarPedidosAnteriores(fone) {
   const pedidosAnteriores = await apiGet(`pedidos-anteriores&fone=${fone}`);
 

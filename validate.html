@@ -8,9 +8,11 @@
     <title>VALIDAÇÃO E AUTENTICAÇÃO</title>
   </head>
   <body>
-    <img id="logo" src="./images/logo.png" alt="logo empresa" />
-    <img id="loading" src="./images/loading.gif" alt="Loading" />
-    <h2>Seja Bem-vindo!!!</h2>
+    <div id="container">
+      <img id="logo" src="./images/logo.png" alt="logo empresa" />
+      <img id="loading" src="./images/loading.gif" alt="Loading" />
+      <h2>Seja Bem-vindo!!!</h2>
+    </div>
 
     <script>
       const pegarParametroUrl = (nome) => {
@@ -41,7 +43,7 @@
             }, 3200);
           } else {
             setTimeout(() => {
-              window.location.href = "https://agapesi.com.br/";
+              window.location.href = "https://agapesi.ddns.com.br/";
             }, 3200);
           }
         })

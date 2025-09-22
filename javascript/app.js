@@ -8,6 +8,7 @@ import {
   carregarDetalhesPedidosAnteriores,
   carregarProdutoSelecionado,
   carregarCarrinho,
+  carregarComplementos,
 } from "./produtos.js";
 
 import { capturar, criarElemento } from "./capturar.js";
@@ -147,7 +148,7 @@ async function gerenciarCategoriasMercadorias() {
       <span class="preco">R$ ${preco}</span>
       `;
 
-      boxDoProduto.addEventListener("click", async () => {
+      boxDoProduto?.addEventListener("click", async () => {
         const payload = {
           categoria: mercadoria.categoria,
           produto: mercadoria.Codigo,
@@ -155,6 +156,8 @@ async function gerenciarCategoriasMercadorias() {
           observacaoProduto: observacaoProduto,
           preco: Number(mercadoria.Venda).toFixed(2),
           imgProduto: urlImagemProduto,
+          RequerComplemento: mercadoria.RequerComplemento,
+          RequerComplementoCod: mercadoria.RequerComplementoCod,
         };
 
         const resposta = await apiPost("selecionar-produto", payload);
@@ -173,8 +176,8 @@ async function gerenciarCategoriasMercadorias() {
         }
       });
 
-      boxDoProduto.append(produtoItem, imagemItem);
-      sectionProdutos.appendChild(boxDoProduto);
+      boxDoProduto?.append(produtoItem, imagemItem);
+      sectionProdutos?.appendChild(boxDoProduto);
     });
   });
 }
@@ -443,6 +446,47 @@ async function gerenciarProdutoSelecionado() {
       const valorAtual = Number(inputQtdPrincipal.value);
       inputQtdPrincipal.value = valorAtual + 1;
     });
+  }
+
+  if (
+    produtoSelecionado.produto?.RequerComplemento === "S" &&
+    produtoSelecionado.produto?.RequerComplementoCod
+  ) {
+    const complementos = await carregarComplementos(produtoSelecionado.produto);
+    const mainSelecionar = capturar("main");
+    const sectionComplementos = criarElemento("section");
+    sectionComplementos.id = "section-complementos";
+
+    complementos.forEach((complemento) => {
+      console.log(complemento);
+      const divComplemento = criarElemento("div");
+      divComplemento.classList.add("div-complemento");
+
+      const conteudoComplemento = `
+        <div class="complemento-descricao-valor">
+          <p>${complemento.Descricao}</p>
+          <small>R$ ${Number(complemento.Venda).toFixed(2)}</small>
+        </div>
+        <div class="qtd-complemento">
+          <i class="fa-solid fa-minus-circle"></i>
+          <input
+                type="number"
+                name="qtd-complemento"
+                value="1"
+                min="1"
+                readonly
+              />
+          <i class="fa-solid fa-plus-circle"></i>
+        </div>
+      `;
+
+      divComplemento.innerHTML = conteudoComplemento;
+      sectionComplementos.appendChild(divComplemento);
+    });
+
+    mainSelecionar.appendChild(sectionComplementos);
+  } else {
+    console.log("Este produto não requer complementos.");
   }
 
   btnAdicionar?.addEventListener("click", async () => {

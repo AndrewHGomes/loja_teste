@@ -1,3 +1,8 @@
-validate: http://localhost/loja_teste/validate.html?tel=%3F%3F%3BCCC%3D%3C%3AA%3B%3B%3E
+casa: http://localhost/loja_teste/validate.html?tel=%3F%3F%3BCCC%3D%3C%3AA%3B%3B%3E
+trabalho: http://localhost/delivery/loja_teste/validate.html?tel=%3F%3F%3BCCC%3D%3C%3AA%3B%3B%3E
 
-validate: http://localhost/loja_teste/validate.html?tel=%3F%3F%3BCCBCA%3B%40%3BAA
+casa: http://localhost/loja_teste/validate.html?tel=%3F%3F%3BCCBCA%3B%40%3BAA
+trabalho: http://localhost/delivery/loja_teste/validate.html?tel=%3F%3F%3BCCBCA%3B%40%3BAA
+
+casa: http://localhost/loja_teste/validate.html?tel=ÔÔØÐÐÐÖ×ÙÒØØÕ
+trabalho: http://localhost/delivery/loja_teste/validate.html?tel=ÔÔØÐÐÐÖ×ÙÒØØÕ
