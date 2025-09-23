@@ -36,7 +36,6 @@ try {
         if ($codigos) {
           $produtos = new Produtos();
           $dados = $produtos->pegarComplementos($codigos);
-          $response_code = 200;
         } else {
           $response_code = 400;
           $dados = ['message' => 'Códigos de complemento não especificados.'];
@@ -67,6 +66,7 @@ try {
         if ($cod) {
           $produtos = new Produtos();
           $ingredientes = $produtos->pegarIngredientesDosProdutos($cod);
+          // Retorna um array associativo, o que é mais comum para um único recurso
           $dados = ['ingredientes' => $ingredientes];
         } else {
           $response_code = 400;
@@ -98,18 +98,19 @@ try {
         }
         break;
       case 'produto-selecionado':
-        if (isset($_SESSION['produto_selecionado'])) {
-          $dados = ['status' => 'success', 'produto' => $_SESSION['produto_selecionado']];
-        } else {
-          $dados = ['status' => 'success', 'message' => 'Nenhum produto selecionado na sessão.', 'produto' => null];
-        }
+        $dados = isset($_SESSION['produto_selecionado']) ? $_SESSION['produto_selecionado'] : null;
         break;
       case 'pegar-carrinho':
-        if (isset($_SESSION['carrinho']) && !empty($_SESSION['carrinho'])) {
-          $dados = ['status' => 'success', 'carrinho' => $_SESSION['carrinho']];
-        } else {
-          $dados = ['status' => 'success', 'message' => 'Carrinho está vazio.', 'carrinho' => []];
-        }
+        $dados = isset($_SESSION['carrinho']) ? $_SESSION['carrinho'] : [];
+        break;
+      case 'usuario-logado':
+        $dados = (isset($_SESSION['usuario']['telefone']) && !empty($_SESSION['usuario']['telefone'])) ? $_SESSION['usuario'] : null;
+        break;
+      case 'dados-sessao':
+        $dados = [
+          'usuario' => isset($_SESSION['usuario']) ? $_SESSION['usuario'] : null,
+          'carrinho' => isset($_SESSION['carrinho']) ? $_SESSION['carrinho'] : [],
+        ];
         break;
       default:
         $response_code = 400;
@@ -122,33 +123,26 @@ try {
         $payload = json_decode($json_payload, true);
         if (isset($payload['produto']) && isset($payload['descricao'])) {
           $_SESSION['produto_selecionado'] = $payload;
-          $dados = ['status' => 'success', 'message' => 'Dados do produto armazenados na sessão.'];
+          $dados = ['message' => 'Dados do produto armazenados na sessão.'];
         } else {
           $response_code = 400;
-          $dados = ['status' => 'error', 'message' => 'Dados do produto inválidos.'];
+          $dados = ['message' => 'Dados do produto inválidos.'];
         }
         break;
       case 'adicionar-ao-carrinho':
         $json_payload = file_get_contents('php://input');
         $payload = json_decode($json_payload, true);
         if (isset($payload) && !empty($payload)) {
-          if (!isset($_SESSION['carrinho'])) {
-            $_SESSION['carrinho'] = [];
-          }
           $_SESSION['carrinho'][] = $payload;
-          $dados = ['status' => 'success', 'message' => 'Produto adicionado ao carrinho.'];
+          $dados = ['message' => 'Produto adicionado ao carrinho.'];
         } else {
           $response_code = 400;
-          $dados = ['status' => 'error', 'message' => 'Dados do produto inválidos para o carrinho.'];
+          $dados = ['message' => 'Dados do produto inválidos para o carrinho.'];
         }
         break;
       case 'limpar-carrinho':
-        if (isset($_SESSION['carrinho'])) {
-          unset($_SESSION['carrinho']);
-          $dados = ['status' => 'success', 'message' => 'Carrinho limpo com sucesso.'];
-        } else {
-          $dados = ['status' => 'success', 'message' => 'O carrinho já está vazio.'];
-        }
+        $_SESSION['carrinho'] = [];
+        $dados = ['message' => 'Carrinho limpo com sucesso.'];
         break;
       case 'remover-item-carrinho':
         $json_payload = file_get_contents('php://input');
@@ -157,14 +151,15 @@ try {
           $index = $payload['index'];
           if (isset($_SESSION['carrinho'][$index])) {
             array_splice($_SESSION['carrinho'], $index, 1);
-            $dados = ['status' => 'success', 'message' => 'Produto removido do carrinho.'];
+            $dados = ['message' => 'Produto removido do carrinho.'];
           } else {
-            $response_code = 400;
-            $dados = ['status' => 'error', 'message' => 'Índice do produto inválido.'];
+            // Resposta com status 200, mas com uma mensagem de erro no corpo.
+            // O front-end pode verificar se a chave 'message' existe na resposta.
+            $dados = ['message' => 'Índice do produto inválido.'];
           }
         } else {
           $response_code = 400;
-          $dados = ['status' => 'error', 'message' => 'Índice do produto não especificado.'];
+          $dados = ['message' => 'Índice do produto não especificado.'];
         }
         break;
       default:
@@ -175,7 +170,6 @@ try {
     $response_code = 405;
     $dados = ['message' => 'Método não permitido.'];
   }
-
 
   http_response_code($response_code);
   echo json_encode($dados);

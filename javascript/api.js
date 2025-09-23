@@ -9,13 +9,16 @@ export async function apiGet(endpoint) {
         Accept: "application/json",
       },
     });
+
     if (!resposta.ok) {
-      throw new Error(`Erro na rede: ${resposta.statusText}`);
+      const erroApi = await resposta.json();
+      throw new Error(erroApi.message || resposta.statusText);
     }
+
     return await resposta.json();
   } catch (erro) {
     console.error("Erro ao buscar dados (GET):", erro);
-    return { status: "error", dados: [] };
+    throw erro;
   }
 }
 
@@ -30,12 +33,15 @@ export async function apiPost(endpoint, payload = {}) {
       },
       body: JSON.stringify(payload),
     });
+
     if (!resposta.ok) {
-      throw new Error(`Erro na rede: ${resposta.statusText}`);
+      const erroApi = await resposta.json();
+      throw new Error(erroApi.message || resposta.statusText);
     }
+
     return await resposta.json();
   } catch (erro) {
     console.error("Erro ao enviar dados (POST):", erro);
-    return { status: "error", dados: [] };
+    throw erro;
   }
 }

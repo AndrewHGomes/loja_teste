@@ -1,28 +1,27 @@
 import { apiGet } from "./api.js";
 
 export async function carregarEmpresa() {
-  const resposta = await apiGet("empresa");
+  try {
+    const resposta = await apiGet("empresa");
 
-  const dadosDaEmpresa = resposta.empresa;
+    if (resposta && resposta.empresa && resposta.parametros) {
+      return {
+        empresa: resposta.empresa[0],
+        parametros: resposta.parametros[0],
+      };
+    }
 
-  const parametrosDaEmpresa = resposta.parametros;
-
-  if (dadosDaEmpresa && parametrosDaEmpresa) {
-    return {
-      empresa: dadosDaEmpresa[0],
-      parametros: parametrosDaEmpresa[0],
-    };
+    return { empresa: null, parametros: null };
+  } catch (erro) {
+    return { empresa: null, parametros: null };
   }
-
-  return [];
 }
 
 export async function carregarHorarios() {
-  const arrayHorarios = await apiGet("horarios");
-
-  if (arrayHorarios && arrayHorarios.length > 0) {
-    return arrayHorarios;
+  try {
+    const arrayHorarios = await apiGet("horarios");
+    return arrayHorarios || [];
+  } catch (erro) {
+    return [];
   }
-
-  return [];
 }

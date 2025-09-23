@@ -6,3 +6,222 @@ trabalho: http://localhost/delivery/loja_teste/validate.html?tel=%3F%3F%3BCCBCA%
 
 casa: http://localhost/loja_teste/validate.html?tel=ÔÔØÐÐÐÖ×ÙÒØØÕ
 trabalho: http://localhost/delivery/loja_teste/validate.html?tel=ÔÔØÐÐÐÖ×ÙÒØØÕ
+
+
+//====================================================================================================================
+
+Resumo da Organização da $_SESSION
+Nossa conversa focou em como estruturar a variável de sessão do PHP ($_SESSION) para que seu código fique mais organizado e escalável, especialmente em um ambiente de e-commerce com múltiplas camadas de dados.
+
+O objetivo é evitar o uso de chaves genéricas e adotar uma hierarquia que separe os dados por tema, como informações do usuário, do pedido e do produto selecionado.
+
+1. Estrutura Proposta para a $_SESSION
+Definimos uma estrutura clara para a $_SESSION, com as seguintes chaves principais:
+
+$_SESSION['usuario']: Para armazenar dados do cliente (ID, nome, telefone, etc.).
+
+$_SESSION['pedido_atual']: Para guardar todas as informações do pedido em andamento.
+
+$_SESSION['carrinho']: Para guardar todas as informações do carrinho.
+
+$_SESSION['produto_selecionado']: Para manter os dados do produto que o cliente está visualizando na página de seleção.
+
+A estrutura completa fica assim:
+
+PHP
+
+$_SESSION = [
+    'usuario' => [],
+    'carrinho' => [],
+];
+
+2. Arquivo de Inicialização da Sessão (session_init.php)
+Você me mostrou seu arquivo session_init.php, que já faz o trabalho de inicializar a sessão de forma segura. Ele configura o nome da sessão com um hash, define os cookies como seguros e inicia a sessão com session_start().
+
+Conteúdo do session_init.php:
+
+PHP
+
+<?php
+
+session_set_cookie_params(0);
+
+$telefoneLoja = "19987654321";
+$nomeLoja = "NomeDaLoja_";
+
+$telefoneHash = hash('sha256', $telefoneLoja);
+
+$nomeSessao = $nomeLoja . $telefoneHash;
+
+session_name($nomeSessao);
+
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$dominios_permitidos = [
+    'https://agapesi.ddns.com.br',
+    'http://localhost'
+];
+
+$origem = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+
+if (in_array($origem, $dominios_permitidos)) {
+    header('Access-Control-Allow-Origin: ' . $origem);
+}
+
+header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
+
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+
+header('Content-Type: application/json');
+
+date_default_timezone_set('America/Fortaleza');
+
+3. Ajustes na API (api.php)
+O seu arquivo api.php foi a base para aplicarmos a nova estrutura. O plano é incluir o session_init.php e, em seguida, garantir que as chaves $_SESSION['pedido_atual'], $_SESSION['usuario'] e $_SESSION['produto_selecionado'] sejam inicializadas antes de serem acessadas.
+
+Conteúdo do api.php (antes das mudanças):
+
+PHP
+
+<?php
+
+ob_start();
+
+require_once 'session_init.php';
+require_once 'Conexao.php';
+require_once 'Empresa.php';
+require_once 'Produtos.php';
+
+try {
+  $metodo = $_SERVER['REQUEST_METHOD'];
+  $recurso = isset($_GET['recurso']) ? $_GET['recurso'] : null;
+  $dados = [];
+  $response_code = 200;
+
+  if ($metodo === 'GET') {
+    switch ($recurso) {
+      case 'empresa':
+        $empresa = new Empresa();
+        $dados = $empresa->pegarDadosDaEmpresa();
+        break;
+      case 'horarios':
+        $empresa = new Empresa();
+        $dados = $empresa->pegarHorariosDaEmpresa();
+        break;
+      case 'produtos':
+        $produtos = new Produtos();
+        $dados = $produtos->pegarTodosOsProdutos();
+        break;
+      case 'categorias':
+        $produtos = new Produtos();
+        $dados = $produtos->pegarCategorias();
+        break;
+      case 'complementos':
+        $codigos = isset($_GET['codigos']) ? $_GET['codigos'] : null;
+        if ($codigos) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarComplementos($codigos);
+          $response_code = 200;
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Códigos de complemento não especificados.'];
+        }
+        break;
+      case 'detalhes-produtos':
+        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
+        if ($cod) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarDetalhesDosProdutos($cod);
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Código do produto não especificado.'];
+        }
+        break;
+      case 'tamanhos':
+        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
+        if ($cod) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarTamanhosDosProdutos($cod);
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Código do produto não especificado.'];
+        }
+        break;
+      case 'ingredientes':
+        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
+        if ($cod) {
+          $produtos = new Produtos();
+          $ingredientes = $produtos->pegarIngredientesDosProdutos($cod);
+          $dados = ['ingredientes' => $ingredientes];
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Código do produto não especificado.'];
+        }
+        break;
+      case 'bordas':
+        $produtos = new Produtos();
+        $dados = $produtos->pegarBordas();
+        break;
+      case 'pedidos-anteriores':
+        $fone = isset($_GET['fone']) ? $_GET['fone'] : null;
+        if ($fone) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarPedidosAnteriores($fone);
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Telefone não especificado.'];
+        }
+        break;
+      case 'detalhes-pedidos-anteriores':
+        $cod = isset($_GET['codigo']) ? $_GET['codigo'] : null;
+        if ($cod) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarDetalhesPedidosAnteriores($cod);
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Código do pedido não especificado.'];
+        }
+        break;
+      case 'produto-selecionado':
+        if (isset($_SESSION['produto_selecionado'])) {
+          $dados = ['status' => 'success', 'produto' => $_SESSION['produto_selecionado']];
+        } else {
+          $dados = ['status' => 'success', 'message' => 'Nenhum produto selecionado na sessão.', 'produto' => null];
+        }
+        break;
+      case 'pegar-carrinho':
+        if (isset($_SESSION['carrinho']) && !empty($_SESSION['carrinho'])) {
+          $dados = ['status' => 'success', 'carrinho' => $_SESSION['carrinho']];
+        } else {
+          $dados = ['status' => 'success', 'message' => 'Carrinho está vazio.', 'carrinho' => []];
+        }
+        break;
+      default:
+        $response_code = 400;
+        $dados = ['message' => 'Recurso GET não especificado.'];
+    }
+  } elseif ($metodo === 'POST') {
+    switch ($recurso) {
+      case 'selecionar-produto':
+        $json_payload = file_get_contents('php://input');
+        $payload = json_decode($json_payload, true);
+        if (isset($payload['produto']) && isset($payload['descricao'])) {
+          $_SESSION['produto_selecionado'] = $payload;
+          $dados = ['status' => 'success', 'message' => 'Dados do produto armazenados na sessão.'];
+        } else {
+          $response_code = 400;
+          $dados = ['status' => 'error', 'message' => 'Dados do produto inválidos.'];
+        }
+        break;
+      case 'adicionar-ao-carrinho':
+        $json
+
+

@@ -5,7 +5,17 @@ require_once 'Conexao.php';
 require_once 'Empresa.php';
 require_once 'Utilidades.php';
 
-unset($_SESSION['carrinho']);
+$_SESSION['carrinho'] = [];
+
+if (!isset($_SESSION['usuario'])) {
+  $_SESSION['usuario'] = [
+    'id' => null,
+    'nome' => null,
+    'telefone' => null,
+    'origem' => null,
+    'inicio' => null,
+  ];
+}
 
 $resposta = ['status' => 'erro'];
 
@@ -28,22 +38,23 @@ if (isset($_GET['tel'])) {
   $fone = DecryptString($fone_criptografado);
 
   if (strlen($fone) >= 11 && strlen($fone) <= 14) {
-    $_SESSION['fone'] = $fone;
-    $_SESSION['origem'] = 'W';
-    $_SESSION['inicio'] = date("H:i:s");
+
+    $_SESSION['usuario']['telefone'] = $fone;
+    $_SESSION['usuario']['origem'] = 'W';
+    $_SESSION['usuario']['inicio'] = date("H:i:s");
 
     $resposta['status'] = 'ok';
   }
 } elseif (isset($_GET['mesa'])) {
+
   $mesa = $_GET['mesa'];
 
-  $_SESSION['origem'] = 'M';
-  $_SESSION['fone'] = $mesa;
-  $_SESSION['inicio'] = date("H:i:s");
+  $_SESSION['usuario']['origem'] = 'M';
+  $_SESSION['usuario']['telefone'] = $mesa;
+  $_SESSION['usuario']['inicio'] = date("H:i:s");
 
   $resposta['status'] = 'ok';
 }
 
-header('Content-Type: application/json');
 echo json_encode($resposta);
 exit;
