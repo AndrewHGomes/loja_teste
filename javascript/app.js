@@ -356,7 +356,7 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
   let conteudoHtml = "<ul>";
 
   detalhesPedidosAnteriores.forEach((obj) => {
-    dataHora = `${obj.Data} - ${obj.Hora}`;
+    dataHora = `${obj.Data} ${obj.Hora}`;
     totalPedido = obj.totalpedido;
 
     if (obj.Complementos && Array.isArray(obj.Complementos)) {
@@ -374,7 +374,7 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
         conteudoHtml += "</ul>";
       }
     } else if (obj.TaxaTransp) {
-      conteudoHtml += `<li><span>Taxa de Transporte:</span> <span>${Number(
+      conteudoHtml += `<li style="color: #080;"><span>Taxa de Transporte:</span> <span>${Number(
         obj.TaxaTransp
       ).toFixed(2)}</span></li>`;
     }
@@ -382,12 +382,13 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
 
   conteudoHtml += "</ul>";
 
-  conteudoHtml += `<p><span>Total do Pedido:</span> <span>${Number(
+  conteudoHtml += `<p><span style="color: #c00;">Total do Pedido:</span> <span>${Number(
     totalPedido
   ).toFixed(2)}</span></p>`;
 
   Swal.fire({
-    html: `${dataHora} ${conteudoHtml}`,
+    title: dataHora,
+    html: conteudoHtml,
     backdrop: "rgba(0,0,0,0.7)",
     confirmButtonColor: "#080",
   });
@@ -458,7 +459,6 @@ async function gerenciarProdutoSelecionado() {
     sectionComplementos.id = "section-complementos";
 
     complementos.forEach((complemento) => {
-      console.log(complemento);
       const divComplemento = criarElemento("div");
       divComplemento.classList.add("div-complemento");
 
@@ -468,7 +468,7 @@ async function gerenciarProdutoSelecionado() {
           <small>R$ ${Number(complemento.Venda).toFixed(2)}</small>
         </div>
         <div class="qtd-complemento">
-          <i class="fa-solid fa-minus-circle"></i>
+          <i class="comp fa-solid fa-minus-circle"></i>
           <input
                 type="number"
                 name="qtd-complemento"
@@ -476,17 +476,50 @@ async function gerenciarProdutoSelecionado() {
                 min="1"
                 readonly
               />
-          <i class="fa-solid fa-plus-circle"></i>
+          <i class="comp fa-solid fa-plus-circle"></i>
         </div>
       `;
 
       divComplemento.innerHTML = conteudoComplemento;
-      sectionComplementos.appendChild(divComplemento);
+      sectionComplementos?.appendChild(divComplemento);
     });
 
-    mainSelecionar.appendChild(sectionComplementos);
-  } else {
-    console.log("Este produto não requer complementos.");
+    mainSelecionar?.appendChild(sectionComplementos);
+
+    const btnMinusComplemento = capturar(".comp.fa-minus-circle", true);
+    const btnPlusComplemento = capturar(".comp.fa-plus-circle", true);
+
+    if (btnMinusComplemento) {
+      btnMinusComplemento.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const inputQtdComplemento = btn
+            .closest(".div-complemento")
+            .querySelector("[name='qtd-complemento']");
+
+          if (inputQtdComplemento) {
+            const valorAtualComplemento = Number(inputQtdComplemento.value);
+            if (valorAtualComplemento > 1) {
+              inputQtdComplemento.value = valorAtualComplemento - 1;
+            }
+          }
+        });
+      });
+    }
+
+    if (btnPlusComplemento) {
+      btnPlusComplemento.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const inputQtdComplemento = btn
+            .closest(".div-complemento")
+            .querySelector("[name='qtd-complemento']");
+
+          if (inputQtdComplemento) {
+            const valorAtualComplemento = Number(inputQtdComplemento.value);
+            inputQtdComplemento.value = valorAtualComplemento + 1;
+          }
+        });
+      });
+    }
   }
 
   btnAdicionar?.addEventListener("click", async () => {

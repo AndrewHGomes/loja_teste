@@ -378,6 +378,8 @@ footer section .fa-x {
 
 .swal2-modal ul ul li {
   font-size: 0.9em;
+  margin-left: 0.5em;
+  font-size: 0.85em;
 }
 
 .swal2-modal p {
