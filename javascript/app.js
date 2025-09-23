@@ -104,7 +104,6 @@ async function gerenciarInfoEmpresa() {
     }
   } catch (error) {
     console.error("Falha ao gerenciar informações da empresa:", error);
-    // Lógica para exibir um erro ao usuário, se necessário.
   }
 }
 
@@ -184,9 +183,7 @@ async function gerenciarCategoriasMercadorias() {
             };
 
             try {
-              // A apiPost agora lança um erro se o status não for 200 OK
               await apiPost("selecionar-produto", payload);
-              // Se a linha acima não lançar um erro, a requisição foi um sucesso.
               window.location.href = "selecionar.html";
             } catch (erro) {
               console.error("Erro ao enviar dados para a API:", erro.message);
@@ -642,7 +639,6 @@ async function gerenciarProdutoSelecionado() {
     });
   } catch (error) {
     console.error("Falha ao gerenciar produto selecionado:", error);
-    // Lógica para lidar com o erro, como redirecionar para a página inicial
     window.location.href = "./index.html";
   }
 }
@@ -652,7 +648,6 @@ async function gerenciarProdutoSelecionado() {
 async function gerenciarCarrinho() {
   try {
     const carrinho = await carregarCarrinho();
-    console.log(carrinho);
     const iconeLixeira = capturar("#nav-voltar .fa-trash");
     const sectionProdutoBox = capturar("#produto-box-carrinho");
     const btnConfirmar = capturar(".btn-confirmar");
@@ -705,14 +700,12 @@ async function gerenciarCarrinho() {
                         produtos.filter((_, i) => i !== index)
                       );
                       if (produtos.length === 1) {
-                        // Se o último item foi removido
                         setTimeout(() => {
                           window.location.href = "./index.html";
                         }, 500);
                       }
                     });
                   } else {
-                    // Se não houver 'message', a API retornou 200, mas o índice é inválido.
                     Swal.fire("Erro", "Índice do produto inválido.", "error");
                   }
                 } catch (erro) {
