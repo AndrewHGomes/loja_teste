@@ -19,7 +19,13 @@ import { capturar, criarElemento } from "./capturar.js";
 
 async function verificacaoDaSessao() {
   const sessao = await verificarSessao();
-  console.log(sessao);
+  const usuario = sessao.usuario;
+
+  for (let chave in usuario) {
+    console.log(usuario[chave]);
+  }
+
+  sessao.carrinho.forEach((item) => console.log(item));
 }
 
 //========================================================================================//
@@ -142,10 +148,10 @@ async function gerenciarCategoriasMercadorias() {
         );
 
         produtosDaCategoria.forEach((mercadoria) => {
-          const preco =
-            mercadoria.pizza === "S"
-              ? ""
-              : `${Number(mercadoria.Venda).toFixed(2)}`;
+          const preco = mercadoria.Venda;
+          // mercadoria.pizza === "S"
+          //   ? ""
+          //   : `${Number(mercadoria.Venda).toFixed(2)}`;
 
           const observacaoProduto = mercadoria.Observacao
             ? mercadoria.Observacao
@@ -323,7 +329,8 @@ async function gerenciarAside() {
 
 async function gerenciarPedidosAnteriores() {
   try {
-    const foneDoUsuario = "5519989716177";
+    const sessao = await verificarSessao();
+    const foneDoUsuario = sessao.usuario.telefone;
     const pedidosAnteriores = await carregarPedidosAnteriores(foneDoUsuario);
 
     const footer = capturar("footer");
