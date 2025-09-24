@@ -104,7 +104,6 @@ async function gerenciarInfoEmpresa() {
     }
   } catch (error) {
     console.error("Falha ao gerenciar informações da empresa:", error);
-    // Lógica para exibir um erro ao usuário, se necessário.
   }
 }
 
@@ -184,9 +183,7 @@ async function gerenciarCategoriasMercadorias() {
             };
 
             try {
-              // A apiPost agora lança um erro se o status não for 200 OK
               await apiPost("selecionar-produto", payload);
-              // Se a linha acima não lançar um erro, a requisição foi um sucesso.
               window.location.href = "selecionar.html";
             } catch (erro) {
               console.error("Erro ao enviar dados para a API:", erro.message);
@@ -642,9 +639,46 @@ async function gerenciarProdutoSelecionado() {
     });
   } catch (error) {
     console.error("Falha ao gerenciar produto selecionado:", error);
-    // Lógica para lidar com o erro, como redirecionar para a página inicial
     window.location.href = "./index.html";
   }
+}
+
+//========================================================================================//
+
+function obterComplementosSelecionados() {
+  const complementos = [];
+
+  const divsComplemento = capturar(".div-complemento", true);
+
+  if (!divsComplemento) {
+    return complementos;
+  }
+
+  divsComplemento.forEach((div) => {
+    const inputQtd = div.querySelector("[name='qtd-complemento']");
+    const qtd = Number(inputQtd.value);
+
+    if (qtd > 0) {
+      const descricaoElement = div.querySelector(
+        ".complemento-descricao-valor p"
+      );
+      const valorElement = div.querySelector(
+        ".complemento-descricao-valor small"
+      );
+
+      const valorTexto = valorElement.textContent.replace("R$ ", "").trim();
+      const valorUnitario = Number(valorTexto);
+
+      complementos.push({
+        Descricao: descricaoElement.textContent.trim(),
+        Venda: valorUnitario.toFixed(2),
+        quantidade: qtd,
+        totalComplemento: (valorUnitario * qtd).toFixed(2),
+      });
+    }
+  });
+
+  return complementos;
 }
 
 //========================================================================================//
@@ -705,14 +739,12 @@ async function gerenciarCarrinho() {
                         produtos.filter((_, i) => i !== index)
                       );
                       if (produtos.length === 1) {
-                        // Se o último item foi removido
                         setTimeout(() => {
                           window.location.href = "./index.html";
                         }, 500);
                       }
                     });
                   } else {
-                    // Se não houver 'message', a API retornou 200, mas o índice é inválido.
                     Swal.fire("Erro", "Índice do produto inválido.", "error");
                   }
                 } catch (erro) {
@@ -755,6 +787,7 @@ async function gerenciarCarrinho() {
           if (respostaApi.message) {
             Swal.fire("Carrinho Limpo!", respostaApi.message, "success").then(
               () => {
+                renderizarProdutos([]);
                 setTimeout(() => {
                   window.location.href = "./index.html";
                 }, 500);

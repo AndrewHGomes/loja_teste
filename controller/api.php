@@ -66,7 +66,6 @@ try {
         if ($cod) {
           $produtos = new Produtos();
           $ingredientes = $produtos->pegarIngredientesDosProdutos($cod);
-          // Retorna um array associativo, o que é mais comum para um único recurso
           $dados = ['ingredientes' => $ingredientes];
         } else {
           $response_code = 400;
@@ -153,8 +152,6 @@ try {
             array_splice($_SESSION['carrinho'], $index, 1);
             $dados = ['message' => 'Produto removido do carrinho.'];
           } else {
-            // Resposta com status 200, mas com uma mensagem de erro no corpo.
-            // O front-end pode verificar se a chave 'message' existe na resposta.
             $dados = ['message' => 'Índice do produto inválido.'];
           }
         } else {
