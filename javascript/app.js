@@ -4,6 +4,7 @@ import { carregarEmpresa, carregarHorarios } from "./empresa.js";
 import {
   carregarProdutos,
   carregarCategorias,
+  carregarTamanhos,
   carregarPedidosAnteriores,
   carregarDetalhesPedidosAnteriores,
   carregarProdutoSelecionado,
@@ -19,13 +20,8 @@ import { capturar, criarElemento } from "./capturar.js";
 
 async function verificacaoDaSessao() {
   const sessao = await verificarSessao();
-  const usuario = sessao.usuario;
-
-  for (let chave in usuario) {
-    console.log(usuario[chave]);
-  }
-
-  sessao.carrinho.forEach((item) => console.log(item));
+  console.log(sessao.usuario);
+  console.log(sessao.carrinho);
 }
 
 //========================================================================================//
@@ -119,6 +115,7 @@ async function gerenciarCategoriasMercadorias() {
   try {
     const produtos = await carregarProdutos();
     const categorias = await carregarCategorias();
+    const tamanhos = await carregarTamanhos();
 
     const navCategorias = capturar(".nav-categorias");
     const sectionProdutos = capturar("#produtos");
@@ -148,7 +145,7 @@ async function gerenciarCategoriasMercadorias() {
         );
 
         produtosDaCategoria.forEach((mercadoria) => {
-          const preco = mercadoria.Venda;
+          const preco = Number(mercadoria.Venda).toFixed(2);
           // mercadoria.pizza === "S"
           //   ? ""
           //   : `${Number(mercadoria.Venda).toFixed(2)}`;
@@ -611,16 +608,32 @@ async function gerenciarProdutoSelecionado() {
 
     btnAdicionar?.addEventListener("click", async () => {
       if (inputQtdPrincipal && areaObservacaoCliente && produtoSelecionado) {
-        const quantidade = Number(inputQtdPrincipal.value);
+        const quantidadePrincipal = Number(inputQtdPrincipal.value);
         const observacaoCliente = areaObservacaoCliente.value;
-        const precoUnitario = Number(produtoSelecionado.preco);
-        const precoTotal = (precoUnitario * quantidade).toFixed(2);
+        const precoUnitarioPrincipal = Number(produtoSelecionado.preco);
+
+        const complementosSelecionados = obterComplementosSelecionados();
+
+        const custoTotalComplementos = complementosSelecionados.reduce(
+          (total, comp) => {
+            return total + Number(comp.totalComplemento);
+          },
+          0
+        );
+
+        const precoUnitarioComComplementos =
+          precoUnitarioPrincipal + custoTotalComplementos;
+        const precoTotalDoItem = (
+          precoUnitarioComComplementos * quantidadePrincipal
+        ).toFixed(2);
 
         const montandoCarrinho = {
           ...produtoSelecionado,
-          preco: precoTotal,
-          quantidade: quantidade,
+
+          preco: precoTotalDoItem,
+          quantidade: quantidadePrincipal,
           observacaoCliente: observacaoCliente,
+          complementos: complementosSelecionados,
         };
 
         try {
@@ -708,14 +721,52 @@ async function gerenciarCarrinho() {
         produtos.forEach((produto, index) => {
           const divCadaProduto = criarElemento("div");
           divCadaProduto.classList.add("div-cada-produto");
-          const conteudoDiv = `
-            <span>${produto.quantidade}x ${produto.descricao}</span>
-            <span>R$ ${produto.preco}  <i class="fa-solid fa-ellipsis-vertical"></i></span>
+
+          const divCabecalhoProduto = criarElemento("div");
+          divCabecalhoProduto.classList.add("produto-cabecalho");
+
+          const precoTotalItem = Number(produto.preco).toFixed(2);
+
+          divCabecalhoProduto.innerHTML = `
+              <span>${produto.quantidade}x ${produto.descricao}</span>
+              <span>R$ ${precoTotalItem}<i class="fa-solid fa-ellipsis-vertical"></i></span>
           `;
-          divCadaProduto.innerHTML = conteudoDiv;
+
+          divCadaProduto.appendChild(divCabecalhoProduto);
+
+          if (
+            produto.complementos &&
+            Array.isArray(produto.complementos) &&
+            produto.complementos.length > 0
+          ) {
+            const divComplementosContainer = criarElemento("div");
+
+            divComplementosContainer.classList.add("complementos-container");
+
+            produto.complementos.forEach((comp) => {
+              const divComplementoItem = criarElemento("div");
+              divComplementoItem.classList.add("complemento-item");
+
+              const precoComplementoTotal = Number(
+                comp.totalComplemento
+              ).toFixed(2);
+
+              divComplementoItem.innerHTML = `
+                  <span class="comp-desc">${comp.quantidade}x ${comp.Descricao}</span>
+                  <span class="comp-preco">R$ ${precoComplementoTotal}</span>
+              `;
+
+              divComplementosContainer.appendChild(divComplementoItem);
+            });
+
+            divCadaProduto.appendChild(divComplementosContainer);
+          }
+
           sectionProdutoBox.append(divCadaProduto);
 
-          const elipse = divCadaProduto.querySelector(".fa-ellipsis-vertical");
+          const elipse = divCabecalhoProduto.querySelector(
+            ".fa-ellipsis-vertical"
+          );
           if (elipse) {
             elipse.addEventListener("click", async () => {
               const resultadoLimparItem = await Swal.fire({
@@ -744,6 +795,7 @@ async function gerenciarCarrinho() {
                       renderizarProdutos(
                         produtos.filter((_, i) => i !== index)
                       );
+
                       if (produtos.length === 1) {
                         setTimeout(() => {
                           window.location.href = "./index.html";

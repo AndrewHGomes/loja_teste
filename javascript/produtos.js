@@ -18,6 +18,19 @@ export async function carregarCategorias() {
   }
 }
 
+export async function carregarTamanhos(codigo) {
+  if (!codigo) {
+    return [];
+  }
+
+  try {
+    const tamanhos = await apiGet(`tamanhos&codigo=${codigo}`);
+    return tamanhos || [];
+  } catch (erro) {
+    return [];
+  }
+}
+
 export async function carregarComplementos(produtoPrincipal) {
   if (
     !produtoPrincipal.RequerComplementoCod ||

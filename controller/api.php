@@ -31,6 +31,10 @@ try {
         $produtos = new Produtos();
         $dados = $produtos->pegarCategorias();
         break;
+      case 'tamanhos':
+        $produtos = new Produtos();
+        $dados = $produtos->pegarTamanhosDosProdutos($codigo);
+        break;
       case 'complementos':
         $codigos = isset($_GET['codigos']) ? $_GET['codigos'] : null;
         if ($codigos) {

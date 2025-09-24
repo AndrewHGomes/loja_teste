@@ -10,218 +10,115 @@ trabalho: http://localhost/delivery/loja_teste/validate.html?tel=ÔÔØÐÐÐÖ�
 
 //====================================================================================================================
 
-Resumo da Organização da $_SESSION
-Nossa conversa focou em como estruturar a variável de sessão do PHP ($_SESSION) para que seu código fique mais organizado e escalável, especialmente em um ambiente de e-commerce com múltiplas camadas de dados.
+Resumo da Conversa e Sequência de Implementação
+Nossa conversa se concentrou em construir e refinar a arquitetura de comunicação entre o seu Backend (PHP/API) e o Frontend (JavaScript/Módulos), com foco especial na correta manipulação de dados de produtos, complementos e tamanhos.
 
-O objetivo é evitar o uso de chaves genéricas e adotar uma hierarquia que separe os dados por tema, como informações do usuário, do pedido e do produto selecionado.
+1. Arquitetura Inicial Estabelecida
+Inicialmente, analisamos a divisão do seu projeto:
 
-1. Estrutura Proposta para a $_SESSION
-Definimos uma estrutura clara para a $_SESSION, com as seguintes chaves principais:
+Backend (PHP): Lógica de negócio e acesso a dados (Modelos), com api.php atuando como roteador central.
 
-$_SESSION['usuario']: Para armazenar dados do cliente (ID, nome, telefone, etc.).
+Frontend (JS): Módulos responsáveis pela comunicação (api.js) e pela lógica de carregamento de dados (empresa.js, produtos.js, etc.).
 
-$_SESSION['pedido_atual']: Para guardar todas as informações do pedido em andamento.
+O módulo api.js foi crucial, definindo a estrutura das chamadas GET e POST com tratamento de erros.
 
-$_SESSION['carrinho']: Para guardar todas as informações do carrinho.
+2. Implementação de Complementos no Carrinho (Frontend)
+O foco principal foi adicionar logicamente os complementos aos produtos do carrinho.
 
-$_SESSION['produto_selecionado']: Para manter os dados do produto que o cliente está visualizando na página de seleção.
+O Problema:
+O botão "Adicionar ao Carrinho" precisava enviar os dados do produto principal junto com um array dos complementos selecionados (e suas quantidades) para a API.
 
-A estrutura completa fica assim:
+A Solução Aplicada (No app.js):
+Criamos a função auxiliar obterComplementosSelecionados() para ler o DOM e coletar os complementos com quantidade maior que zero.
 
-PHP
+Na função gerenciarProdutoSelecionado(), antes de enviar, fizemos:
 
-$_SESSION = [
-    'usuario' => [],
-    'carrinho' => [],
-];
+Cálculo do custoTotalComplementos.
 
-2. Arquivo de Inicialização da Sessão (session_init.php)
-Você me mostrou seu arquivo session_init.php, que já faz o trabalho de inicializar a sessão de forma segura. Ele configura o nome da sessão com um hash, define os cookies como seguros e inicia a sessão com session_start().
+Cálculo do precoTotalDoItem (Preço Principal + Custo Complementos) * Quantidade Principal.
 
-Conteúdo do session_init.php:
+O payload do apiPost('adicionar-ao-carrinho') foi modificado para incluir o novo preço total e o array complementos: [...].
 
-PHP
+Refatoração do Carrinho (Exibição):
+Refinamos a função gerenciarCarrinho() e sua função interna renderizarProdutos() para exibir os complementos aninhados corretamente.
 
-<?php
+O produto principal e seus complementos são encapsulados em uma única div.div-cada-produto.
 
-session_set_cookie_params(0);
+Os complementos são agrupados em uma div.complementos-container (para aplicar a indentação via CSS) e aninhados sob o cabeçalho do produto.
 
-$telefoneLoja = "19987654321";
-$nomeLoja = "NomeDaLoja_";
+3. Implementação de Tamanhos (Correção de Parâmetros)
+Em seguida, implementamos a lógica para carregar tamanhos de produtos (ex: pizzas).
 
-$telefoneHash = hash('sha256', $telefoneLoja);
+O Problema:
+A função PHP pegarTamanhosDosProdutos($codigo) exigia o código do produto ($codigo), mas a chamada JS original apiGet("tamanhos") não o fornecia.
 
-$nomeSessao = $nomeLoja . $telefoneHash;
+A Solução Aplicada (No produtos.js):
+Corrigimos a função carregarTamanhos(codigo) para formatar o endpoint da API, passando o código do produto como um parâmetro de URL extra:
 
-session_name($nomeSessao);
+JavaScript
 
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// products.js (Corrigido)
+export async function carregarTamanhos(codigo) {
+    // ...
+    // A correção chave é aqui:
+    const tamanhos = await apiGet(`tamanhos&codigo=${codigo}`); 
+    // ...
 }
+Isso garante que a URL enviada ao servidor seja, por exemplo: controller/api.php?recurso=tamanhos&codigo=1001.
 
-$dominios_permitidos = [
-    'https://agapesi.ddns.com.br',
-    'http://localhost'
-];
+Sequência de Códigos para Finalização
+Para que o projeto esteja funcional e pronto para a próxima etapa (a lógica de seleção de tamanho na UI), você deve garantir que os seguintes códigos estejam integrados:
 
-$origem = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
-
-if (in_array($origem, $dominios_permitidos)) {
-    header('Access-Control-Allow-Origin: ' . $origem);
-}
-
-header('Cache-Control: no-cache, no-store, must-revalidate');
-header('Pragma: no-cache');
-header('Expires: 0');
-
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-
-header('Content-Type: application/json');
-
-date_default_timezone_set('America/Fortaleza');
-
-3. Ajustes na API (api.php)
-O seu arquivo api.php foi a base para aplicarmos a nova estrutura. O plano é incluir o session_init.php e, em seguida, garantir que as chaves $_SESSION['pedido_atual'], $_SESSION['usuario'] e $_SESSION['produto_selecionado'] sejam inicializadas antes de serem acessadas.
-
-Conteúdo do api.php (antes das mudanças):
+A. Backend (PHP - Para lidar com o parâmetro codigo)
+No seu api.php (onde o switch é executado), garanta que a variável $codigo esteja sendo capturada da URL (e provavelmente o mesmo para o $complemento ou $codigos em outros endpoints):
 
 PHP
 
-<?php
+// api.php (Router) - Exemplo da parte que busca o código
+// ... (código antes do switch)
+$recurso = $_GET['recurso'] ?? '';
+$codigo = $_GET['codigo'] ?? ''; // Certifique-se de que o código está sendo capturado
+// ...
 
-ob_start();
+switch ($recurso) {
+    // ... outros cases ...
 
-require_once 'session_init.php';
-require_once 'Conexao.php';
-require_once 'Empresa.php';
-require_once 'Produtos.php';
+    case 'tamanhos':
+        $produtos = new Produtos();
+        // A função precisa receber o código do produto
+        $dados = $produtos->pegarTamanhosDosProdutos($codigo);
+        break;
+        
+    // ...
+}
+B. Frontend (JS - Módulo produtos.js)
+Seu módulo produtos.js com a função carregarTamanhos corrigida (como está na sua última mensagem):
 
-try {
-  $metodo = $_SERVER['REQUEST_METHOD'];
-  $recurso = isset($_GET['recurso']) ? $_GET['recurso'] : null;
-  $dados = [];
-  $response_code = 200;
+JavaScript
 
-  if ($metodo === 'GET') {
-    switch ($recurso) {
-      case 'empresa':
-        $empresa = new Empresa();
-        $dados = $empresa->pegarDadosDaEmpresa();
-        break;
-      case 'horarios':
-        $empresa = new Empresa();
-        $dados = $empresa->pegarHorariosDaEmpresa();
-        break;
-      case 'produtos':
-        $produtos = new Produtos();
-        $dados = $produtos->pegarTodosOsProdutos();
-        break;
-      case 'categorias':
-        $produtos = new Produtos();
-        $dados = $produtos->pegarCategorias();
-        break;
-      case 'complementos':
-        $codigos = isset($_GET['codigos']) ? $_GET['codigos'] : null;
-        if ($codigos) {
-          $produtos = new Produtos();
-          $dados = $produtos->pegarComplementos($codigos);
-          $response_code = 200;
-        } else {
-          $response_code = 400;
-          $dados = ['message' => 'Códigos de complemento não especificados.'];
-        }
-        break;
-      case 'detalhes-produtos':
-        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
-        if ($cod) {
-          $produtos = new Produtos();
-          $dados = $produtos->pegarDetalhesDosProdutos($cod);
-        } else {
-          $response_code = 400;
-          $dados = ['message' => 'Código do produto não especificado.'];
-        }
-        break;
-      case 'tamanhos':
-        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
-        if ($cod) {
-          $produtos = new Produtos();
-          $dados = $produtos->pegarTamanhosDosProdutos($cod);
-        } else {
-          $response_code = 400;
-          $dados = ['message' => 'Código do produto não especificado.'];
-        }
-        break;
-      case 'ingredientes':
-        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
-        if ($cod) {
-          $produtos = new Produtos();
-          $ingredientes = $produtos->pegarIngredientesDosProdutos($cod);
-          $dados = ['ingredientes' => $ingredientes];
-        } else {
-          $response_code = 400;
-          $dados = ['message' => 'Código do produto não especificado.'];
-        }
-        break;
-      case 'bordas':
-        $produtos = new Produtos();
-        $dados = $produtos->pegarBordas();
-        break;
-      case 'pedidos-anteriores':
-        $fone = isset($_GET['fone']) ? $_GET['fone'] : null;
-        if ($fone) {
-          $produtos = new Produtos();
-          $dados = $produtos->pegarPedidosAnteriores($fone);
-        } else {
-          $response_code = 400;
-          $dados = ['message' => 'Telefone não especificado.'];
-        }
-        break;
-      case 'detalhes-pedidos-anteriores':
-        $cod = isset($_GET['codigo']) ? $_GET['codigo'] : null;
-        if ($cod) {
-          $produtos = new Produtos();
-          $dados = $produtos->pegarDetalhesPedidosAnteriores($cod);
-        } else {
-          $response_code = 400;
-          $dados = ['message' => 'Código do pedido não especificado.'];
-        }
-        break;
-      case 'produto-selecionado':
-        if (isset($_SESSION['produto_selecionado'])) {
-          $dados = ['status' => 'success', 'produto' => $_SESSION['produto_selecionado']];
-        } else {
-          $dados = ['status' => 'success', 'message' => 'Nenhum produto selecionado na sessão.', 'produto' => null];
-        }
-        break;
-      case 'pegar-carrinho':
-        if (isset($_SESSION['carrinho']) && !empty($_SESSION['carrinho'])) {
-          $dados = ['status' => 'success', 'carrinho' => $_SESSION['carrinho']];
-        } else {
-          $dados = ['status' => 'success', 'message' => 'Carrinho está vazio.', 'carrinho' => []];
-        }
-        break;
-      default:
-        $response_code = 400;
-        $dados = ['message' => 'Recurso GET não especificado.'];
-    }
-  } elseif ($metodo === 'POST') {
-    switch ($recurso) {
-      case 'selecionar-produto':
-        $json_payload = file_get_contents('php://input');
-        $payload = json_decode($json_payload, true);
-        if (isset($payload['produto']) && isset($payload['descricao'])) {
-          $_SESSION['produto_selecionado'] = $payload;
-          $dados = ['status' => 'success', 'message' => 'Dados do produto armazenados na sessão.'];
-        } else {
-          $response_code = 400;
-          $dados = ['status' => 'error', 'message' => 'Dados do produto inválidos.'];
-        }
-        break;
-      case 'adicionar-ao-carrinho':
-        $json
+// produtos.js
+import { apiGet } from "./api.js";
+// ... (outras funções) ...
+
+export async function carregarTamanhos(codigo) {
+  if (!codigo) {
+    return [];
+  }
+
+  try {
+    // Correção da chamada para incluir o código
+    const tamanhos = await apiGet(`tamanhos&codigo=${codigo}`);
+    return tamanhos || [];
+  } catch (erro) {
+    return [];
+  }
+}
+// ... (resto das funções) ...
+C. Frontend (JS - Módulo app.js)
+A função gerenciarCarrinho() no seu app.js com a lógica de aninhamento dos complementos:
+
+(Requer a estrutura completa fornecida na nossa última resposta para funcionar corretamente, com o div.produto-cabecalho e o aninhamento de div.complementos-container.)
+
+Com estas etapas finalizadas, estamos prontos para trabalhar na lógica de seleção de tamanho e na exibição do preço dinâmico na página de seleção de produto. Qual desses pontos você gostaria de começar a trabalhar?
 
 

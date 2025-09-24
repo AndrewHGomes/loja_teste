@@ -63,19 +63,35 @@ header .fa-magnifying-glass-plus {
 
 #produto-box-carrinho {
   color: #333;
-  font-weight: bold;
   padding: 0.5em;
 }
 
 #produto-box-carrinho .div-cada-produto {
-  display: flex;
-  justify-content: space-between;
   padding: 0.5em 0;
+  display: flex;
+  flex-direction: column;
   border-bottom: 1px solid #cfcfcf;
 }
 
-#produto-box-carrinho .div-cada-produto span .fa-ellipsis-vertical {
-  padding: 0.5em;
+#produto-box-carrinho .div-cada-produto .produto-cabecalho {
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#produto-box-carrinho .div-cada-produto .complementos-container {
+  padding: 0 1.3em 0 0.5em;
+}
+
+#produto-box-carrinho
+  .div-cada-produto
+  .complementos-container
+  .complemento-item {
+  font-size: 0.8em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .carrinho-vazio {
