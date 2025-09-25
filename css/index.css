@@ -161,11 +161,15 @@ main {
 
 #produtos .box-produto .imagem-item {
   flex: 1;
+  max-width: 150px;
+  max-height: 150px;
+  overflow: hidden;
 }
 
 #produtos .box-produto .imagem-item img {
   width: 100%;
   height: 100%;
+  object-fit: contain;
 }
 
 aside {
@@ -219,6 +223,11 @@ aside div {
   gap: 0.5em;
 }
 
+aside div h3,
+aside div h4 {
+  text-align: center;
+}
+
 aside table {
   width: 90%;
   background-color: #fff;
@@ -253,7 +262,7 @@ footer {
   width: 100%;
   position: fixed;
   bottom: 0;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid #ccc;
   box-shadow: var(--sombra-encima);
   transition: all 0.4s ease-in-out;
   overflow: auto;
@@ -289,6 +298,7 @@ body.no-scroll {
 
 footer p {
   color: #333;
+  font-weight: bold;
   font-size: 0.9em;
   display: flex;
   align-items: center;
@@ -314,7 +324,7 @@ footer section .fa-x {
   gap: 1em;
 }
 
-.pedidos-anteriores div {
+.pedidos-anteriores .pedido-item {
   border-top: 1px solid #e0e0e0;
 }
 

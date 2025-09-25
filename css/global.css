@@ -1,6 +1,6 @@
 :root {
   --sombra-box: 0 0 8px 2px rgba(0, 0, 0, 0.2);
-  --sombra-texto: 1px 1px 1px rgba(0, 0, 0, 0.2);
+  --sombra-texto: 1px 1px 1px rgba(0, 0, 0, 0.3);
   --sombra-embaixo: 0 2px 8px 2px rgba(0, 0, 0, 0.2);
   --sombra-encima: 0 -2px 8px 2px rgba(0, 0, 0, 0.2);
 }

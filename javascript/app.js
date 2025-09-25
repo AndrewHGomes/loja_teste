@@ -115,7 +115,6 @@ async function gerenciarCategoriasMercadorias() {
   try {
     const produtos = await carregarProdutos();
     const categorias = await carregarCategorias();
-    const tamanhos = await carregarTamanhos();
 
     const navCategorias = capturar(".nav-categorias");
     const sectionProdutos = capturar("#produtos");
@@ -146,9 +145,6 @@ async function gerenciarCategoriasMercadorias() {
 
         produtosDaCategoria.forEach((mercadoria) => {
           const preco = Number(mercadoria.Venda).toFixed(2);
-          // mercadoria.pizza === "S"
-          //   ? ""
-          //   : `${Number(mercadoria.Venda).toFixed(2)}`;
 
           const observacaoProduto = mercadoria.Observacao
             ? mercadoria.Observacao
@@ -174,15 +170,100 @@ async function gerenciarCategoriasMercadorias() {
           `;
 
           boxDoProduto?.addEventListener("click", async () => {
+            const tamanhos = await carregarTamanhos(mercadoria.Codigo);
+            console.log(tamanhos);
+
+            let tamanhoFinal = null;
+            let precoFinal = Number(mercadoria.Venda).toFixed(2);
+            let saboresPermitidosFinal = "";
+            let permiteBordaFinal = "";
+
+            if (tamanhos && tamanhos.length > 0) {
+              let htmlSwal = `
+            <style>
+                .tamanho-button-group input[type="radio"] { display: none; }
+                .tamanho-button-group label {
+                    display: inline-block; padding: 8px 15px; margin: 5px;
+                    border: 2px solid #ccc; border-radius: 20px; cursor: pointer;
+                    font-weight: bold; transition: all 0.2s; width: 200px; text-align: center;
+                }
+                .tamanho-button-group input[type="radio"]:checked + label {
+                    background-color: #080; color: white; border-color: #080;
+                    box-shadow: 0 0 5px rgba(0, 128, 0, 0.5);
+                }
+            </style>
+            <div style="text-align: center; margin-top: 10px;">
+        `;
+
+              tamanhos.forEach((tamanho) => {
+                htmlSwal += `
+                <div class="tamanho-button-group" style="display: inline-block;">
+                    <input 
+                        type="radio" 
+                        id="${tamanho.Tamanho}" 
+                        name="tamanho-produto" 
+                        value="${tamanho.Tamanho}|${Number(
+                  tamanho.Valor
+                ).toFixed(2)}|${tamanho.Sabores}|${tamanho.PermiteBorda}" 
+                    />
+                    <label for="${tamanho.Tamanho}">
+                        ${tamanho.Tamanho} - R$ ${Number(tamanho.Valor).toFixed(
+                  2
+                )}
+                    </label>
+                </div>
+            `;
+              });
+
+              htmlSwal += `</div>`;
+
+              const result = await Swal.fire({
+                title: `SELECIONE O TAMANHO:`,
+                html: htmlSwal,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#080",
+                cancelButtonText: "Cancelar",
+                cancelButtonColor: "#c00",
+                focusConfirm: false,
+                preConfirm: () => {
+                  const radioSelecionado = document.querySelector(
+                    'input[name="tamanho-produto"]:checked'
+                  );
+                  if (!radioSelecionado) {
+                    Swal.showValidationMessage(
+                      "Por favor, selecione um tamanho."
+                    );
+                    return false;
+                  }
+                  return radioSelecionado.value;
+                },
+              });
+
+              if (result.isConfirmed) {
+                const [tamanho, preco, sabores, permiteBorda] =
+                  result.value.split("|");
+                tamanhoFinal = tamanho;
+                precoFinal = preco;
+                saboresPermitidosFinal = sabores;
+                permiteBordaFinal = permiteBorda;
+              } else {
+                return;
+              }
+            }
+
             const payload = {
               categoria: mercadoria.categoria,
               produto: mercadoria.Codigo,
               descricao: mercadoria.Descricao,
               observacaoProduto: observacaoProduto,
-              preco: Number(mercadoria.Venda).toFixed(2),
+              preco: precoFinal,
               imgProduto: urlImagemProduto,
               RequerComplemento: mercadoria.RequerComplemento,
               RequerComplementoCod: mercadoria.RequerComplementoCod,
+              tamanho: tamanhoFinal,
+              saboresPermitidos: saboresPermitidosFinal,
+              PermiteBorda: permiteBordaFinal,
             };
 
             try {
@@ -190,7 +271,6 @@ async function gerenciarCategoriasMercadorias() {
               window.location.href = "selecionar.html";
             } catch (erro) {
               console.error("Erro ao enviar dados para a API:", erro.message);
-
               Swal.fire({
                 text: "Ocorreu um erro ao selecionar o produto. Tente novamente.",
                 icon: "error",

@@ -24,7 +24,7 @@ export async function carregarTamanhos(codigo) {
   }
 
   try {
-    const tamanhos = await apiGet(`tamanhos&codigo=${codigo}`);
+    const tamanhos = await apiGet(`tamanhos&cod=${codigo}`);
     return tamanhos || [];
   } catch (erro) {
     return [];
