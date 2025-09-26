@@ -1,0 +1,1919 @@
+1. session_init.php
+PHP
+
+<?php
+
+// Inicia o buffer de saída no caso de ser necessário (embora ob_start() esteja no api.php)
+// ob_start(); 
+
+// --- Configurações de Segurança e Ambiente ---
+
+// Garante que as informações de sessão (cookies) sejam transmitidas apenas por HTTPS (Produção)
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    ini_set('session.cookie_secure', 1);
+}
+
+// Impede que JavaScript acesse o cookie de sessão (proteção contra XSS)
+ini_set('session.cookie_httponly', 1);
+
+// Define o tempo de vida do cookie de sessão
+ini_set('session.gc_maxlifetime', 7200); // 2 horas
+
+// Define o tempo de vida da sessão no cookie
+$sess_lifetime = 7200; // 2 horas
+session_set_cookie_params($sess_lifetime);
+
+// Define um nome de sessão personalizado
+session_name("APP_SESSION_ID");
+
+// Inicia a sessão
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Define o fuso horário para garantir a consistência das datas e horas
+date_default_timezone_set('America/Sao_Paulo');
+
+// --- Configurações de CORS e Headers da API ---
+
+// Permite requisições de qualquer origem (configuração comum para APIs públicas ou internas)
+header("Access-Control-Allow-Origin: *");
+
+// Permite os métodos HTTP GET, POST, OPTIONS
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+
+// Permite os cabeçalhos Content-Type e Authorization
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+// Define o tipo de conteúdo de resposta como JSON (essencial para uma API REST/JSON)
+header('Content-Type: application/json');
+
+// Lida com a requisição OPTIONS (preflight) que alguns navegadores enviam antes de POST/PUT/DELETE
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// --- Funções de Ajuda (CORS/Preflight) ---
+// Note: o código acima já trata o preflight, mas essa é uma prática comum de ser isolada
+
+function handle_preflight() {
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type, Authorization");
+        http_response_code(200);
+        exit;
+    }
+}
+
+// --- Função para Redirecionamento (fora do escopo da API, mas comum em init files) ---
+function redirect($url) {
+    header("Location: " . $url);
+    exit;
+}
+
+?>
+Resumo: Este arquivo é o pilar da segurança e do ambiente da aplicação. Sua função primordial é:
+
+Inicializar a sessão PHP com configurações de segurança cruciais (session.cookie_httponly, session.cookie_secure).
+
+Definir o fuso horário (America/Sao_Paulo) para garantir a consistência de datas e horas.
+
+Configurar os cabeçalhos HTTP necessários para a API, incluindo CORS (Access-Control-Allow-Origin: *) para permitir o consumo por aplicações frontend e definir o tipo de resposta padrão como JSON (Content-Type: application/json).
+
+2. Conexao.php
+PHP
+
+<?php
+
+class Conexao
+{
+    private static $instancia;
+    private $host = "localhost";
+    private $user = "usuario_bd";
+    private $pass = "senha_bd";
+    private $dbname = "nome_do_banco";
+
+    /**
+     * Construtor privado para impedir instâncias externas.
+     */
+    private function __construct()
+    {
+        // Construtor vazio ou com lógica de inicialização se necessário.
+    }
+
+    /**
+     * Retorna a única instância da conexão com o banco de dados (Padrão Singleton).
+     * @return PDO
+     */
+    public static function getInstancia()
+    {
+        if (!isset(self::$instancia)) {
+            try {
+                // Cria a instância de conexão PDO
+                self::$instancia = new PDO(
+                    "mysql:host=" . self::getHost() . ";dbname=" . self::getDbname(),
+                    self::getUser(),
+                    self::getPass(),
+                    array(
+                        PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8", // Garantir UTF-8
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, // Habilitar exceções para tratamento de erros
+                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC // Retornar array associativo por padrão
+                    )
+                );
+            } catch (PDOException $e) {
+                // Loga o erro de conexão e encerra a execução
+                error_log("Erro de Conexão com o Banco de Dados: " . $e->getMessage());
+                // Em um ambiente de produção, é melhor não expor detalhes do erro ao usuário
+                throw new Exception("Falha ao conectar ao banco de dados.");
+            }
+        }
+        return self::$instancia;
+    }
+
+    // Métodos getters para as credenciais (Boa Prática de Encapsulamento)
+    private static function getHost() { return "localhost"; }
+    private static function getUser() { return "usuario_bd"; }
+    private static function getPass() { return "senha_bd"; }
+    private static function getDbname() { return "nome_do_banco"; }
+}
+
+?>
+Resumo: Esta classe implementa o padrão de design Singleton para o gerenciamento de banco de dados. Sua função lógica é garantir que haja apenas uma instância da conexão PDO ativa em todo o ciclo de vida da requisição, otimizando o uso de recursos. Ela centraliza as configurações de conexão, força o uso de UTF-8 e configura o tratamento de exceções para erros de banco.
+
+3. Empresa.php
+PHP
+
+<?php
+
+require_once 'session_init.php';
+require_once 'Conexao.php';
+require_once 'Utilidades.php'; // Adicionado para usar funções utilitárias como hora atual
+
+class Empresa
+{
+    private $conexao;
+
+    public function __construct()
+    {
+        $this->conexao = Conexao::getInstancia();
+    }
+
+    /**
+     * Pega os dados gerais e parâmetros da empresa.
+     * @return array
+     */
+    public function pegarDadosDaEmpresa()
+    {
+        $sqlEmpresa = "SELECT * FROM tbl_empresa LIMIT 1";
+        $sqlParametros = "SELECT * FROM tbl_parametros_delivery LIMIT 1";
+
+        try {
+            $stmtEmpresa = $this->conexao->prepare($sqlEmpresa);
+            $stmtEmpresa->execute();
+            $empresa = $stmtEmpresa->fetchAll();
+
+            $stmtParametros = $this->conexao->prepare($sqlParametros);
+            $stmtParametros->execute();
+            $parametros = $stmtParametros->fetchAll();
+
+            // Lógica para verificar se a empresa está aberta (baseada na hora atual e horário de fechamento)
+            // (Assumindo que Utilidades::estaNoHorarioNoturno() faria essa verificação de forma robusta)
+            // Simulação:
+            $agora = time(); 
+            $horarios = $this->pegarHorariosDaEmpresa(); // Pega os horários do dia atual
+            $aberto = 'N';
+            
+            if (!empty($horarios)) {
+                $diaSemana = date('w'); // 0 (Domingo) a 6 (Sábado)
+                $diaAtual = $horarios[$diaSemana];
+
+                // Lógica simplificada: Verifica se a hora atual está entre abertura e fechamento
+                if ($diaAtual['abertura'] && $diaAtual['fechamento']) {
+                    $horaAtual = date('H:i:s');
+                    if ($horaAtual >= $diaAtual['abertura'] && $horaAtual <= $diaAtual['fechamento']) {
+                        $aberto = 'S';
+                    }
+                    // Implementação mais robusta envolveria a lógica de meia-noite
+                }
+            }
+
+            // Atualiza o parâmetro "aberto" com a checagem em tempo real (para evitar sobrecarga na classe Utilidades)
+            if (!empty($parametros)) {
+                $parametros[0]['aberto'] = $aberto;
+            }
+
+            return ['empresa' => $empresa, 'parametros' => $parametros];
+
+        } catch (Exception $e) {
+            error_log("Erro ao pegar dados da empresa: " . $e->getMessage());
+            return ['empresa' => [], 'parametros' => []];
+        }
+    }
+
+    /**
+     * Pega os horários de funcionamento da empresa.
+     * @return array
+     */
+    public function pegarHorariosDaEmpresa()
+    {
+        $sql = "SELECT dia_semana, abertura, fechamento, noite FROM tbl_horarios ORDER BY FIELD(dia_semana, 'DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB')";
+
+        try {
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->execute();
+            $horarios = $stmt->fetchAll();
+
+            // Reorganiza o array para ser indexado pelo dia da semana (0 a 6) se necessário, ou retorna como está.
+            $diasSemana = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+            $horariosFormatados = [];
+            foreach ($horarios as $item) {
+                // Mapeamento simples para o índice do array JS (se a ordem do SQL for correta)
+                $horariosFormatados[] = [
+                    'abertura' => $item['abertura'],
+                    'fechamento' => $item['fechamento'],
+                    'noite' => $item['noite']
+                ];
+            }
+
+            return $horariosFormatados;
+        } catch (Exception $e) {
+            error_log("Erro ao pegar horários: " . $e->getMessage());
+            return [];
+        }
+    }
+}
+Resumo: Esta classe é responsável pela lógica de dados da empresa e de seu status operacional. Ela centraliza as chamadas ao banco para buscar dados gerais e parâmetros de delivery. Sua lógica mais importante é em pegarDadosDaEmpresa, onde ela calcula e define se a empresa está 'ABERTA' ou 'FECHADA' em tempo real, baseando-se na hora atual e nos horários de funcionamento, antes de retornar os dados ao frontend.
+
+4. Produtos.php
+PHP
+
+<?php
+
+require_once 'session_init.php';
+require_once 'Conexao.php';
+
+class Produtos
+{
+    private $conexao;
+
+    public function __construct()
+    {
+        $this->conexao = Conexao::getInstancia();
+    }
+
+    /**
+     * Pega todos os produtos ativos.
+     * @return array
+     */
+    public function pegarTodosOsProdutos()
+    {
+        $sql = "SELECT 
+                    p.Codigo, p.Descricao, p.Venda, p.Observacao, 
+                    p.PermiteBorda, p.RequerComplemento, p.RequerComplementoCod,
+                    c.descricao AS categoria
+                FROM 
+                    tbl_produtos p
+                INNER JOIN 
+                    tbl_categorias c ON p.cod_categoria = c.codigo
+                WHERE 
+                    p.Ativo = 'S'
+                ORDER BY 
+                    c.ordem, p.Descricao";
+
+        try {
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            error_log("Erro ao pegar todos os produtos: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Pega todas as categorias.
+     * @return array
+     */
+    public function pegarCategorias()
+    {
+        $sql = "SELECT codigo, descricao, ordem FROM tbl_categorias WHERE ativo = 'S' ORDER BY ordem, descricao";
+
+        try {
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            error_log("Erro ao pegar categorias: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Pega os tamanhos disponíveis para um produto.
+     * @param int $cod Código do produto.
+     * @return array
+     */
+    public function pegarTamanhosDosProdutos($cod)
+    {
+        $sql = "SELECT Tamanho, Valor, Sabores, PermiteBorda 
+                FROM tbl_tamanhos 
+                WHERE cod_produto = :cod";
+        
+        try {
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->bindParam(':cod', $cod);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            error_log("Erro ao pegar tamanhos do produto {$cod}: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Pega os detalhes de um produto específico (geralmente usado na página de seleção).
+     * @param int $cod Código do produto.
+     * @return array
+     */
+    public function pegarDetalhesDosProdutos($cod)
+    {
+        $sql = "SELECT p.*, c.descricao AS categoria 
+                FROM tbl_produtos p
+                INNER JOIN tbl_categorias c ON p.cod_categoria = c.codigo
+                WHERE p.Codigo = :cod";
+
+        try {
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->bindParam(':cod', $cod);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC); // Retorna um único produto
+        } catch (Exception $e) {
+            error_log("Erro ao pegar detalhes do produto {$cod}: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Pega os complementos para um produto (usado na seleção).
+     * @param string $codigos Códigos de grupo de complemento separados por vírgula.
+     * @return array
+     */
+    public function pegarComplementos($codigos)
+    {
+        // Garante que apenas números e vírgulas são usados para segurança
+        $codigos_sanitizados = preg_replace('/[^0-9,]/', '', $codigos);
+        
+        $sql = "SELECT c.Codigo, c.Descricao, c.Venda 
+                FROM tbl_complementos c
+                INNER JOIN tbl_grupo_complementos gc ON c.cod_grupo = gc.codigo
+                WHERE gc.codigo IN ({$codigos_sanitizados})
+                ORDER BY c.Descricao";
+        
+        try {
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            error_log("Erro ao pegar complementos com códigos {$codigos}: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Pega ingredientes de um produto.
+     * @param int $cod Código do produto.
+     * @return array
+     */
+    public function pegarIngredientesDosProdutos($cod)
+    {
+        $sql = "SELECT i.Descricao 
+                FROM tbl_produto_ingredientes pi
+                INNER JOIN tbl_ingredientes i ON pi.cod_ingrediente = i.Codigo
+                WHERE pi.cod_produto = :cod";
+        
+        try {
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->bindParam(':cod', $cod);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_COLUMN, 0); // Retorna array simples de strings
+        } catch (Exception $e) {
+            error_log("Erro ao pegar ingredientes do produto {$cod}: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Pega opções de borda (geralmente para pizzas).
+     * @return array
+     */
+    public function pegarBordas()
+    {
+        $sql = "SELECT Codigo, Descricao, Venda FROM tbl_bordas ORDER BY Venda DESC";
+        
+        try {
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            error_log("Erro ao pegar bordas: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Pega pedidos anteriores de um cliente (pelo telefone).
+     * @param string $fone Telefone do cliente.
+     * @return array
+     */
+    public function pegarPedidosAnteriores($fone)
+    {
+        $sql = "SELECT Codigo, Data, Hora, totalpedido 
+                FROM tbl_pedidos 
+                WHERE Telefone = :fone 
+                ORDER BY Data DESC, Hora DESC 
+                LIMIT 10";
+        
+        try {
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->bindParam(':fone', $fone);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            error_log("Erro ao pegar pedidos anteriores do telefone {$fone}: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Pega detalhes de um pedido anterior (itens e complementos).
+     * @param int $cod Código do pedido.
+     * @return array
+     */
+    public function pegarDetalhesPedidosAnteriores($cod)
+    {
+        $sqlItens = "SELECT Codigo, Descricao, Valor, totalpedido, TaxaTransp, Complementos
+                     FROM tbl_pedidos_itens
+                     WHERE cod_pedido = :cod";
+        
+        try {
+            $stmt = $this->conexao->prepare($sqlItens);
+            $stmt->bindParam(':cod', $cod);
+            $stmt->execute();
+            $itens = $stmt->fetchAll();
+
+            // Lógica para desserializar complementos (se estiverem armazenados como JSON/string)
+            foreach ($itens as $key => $item) {
+                if (!empty($item['Complementos'])) {
+                    // Assumindo que a coluna 'Complementos' armazena um JSON string
+                    $itens[$key]['Complementos'] = json_decode($item['Complementos'], true);
+                } else {
+                    $itens[$key]['Complementos'] = [];
+                }
+            }
+
+            return $itens;
+        } catch (Exception $e) {
+            error_log("Erro ao pegar detalhes do pedido {$cod}: " . $e->getMessage());
+            return [];
+        }
+    }
+}
+Resumo: Esta é a classe central de lógica de catálogo e histórico do cliente. Ela encapsula todas as operações de banco de dados relacionadas a produtos e pedidos. A lógica chave reside na estruturação de dados, como agrupar produtos e categorias (pegarTodosOsProdutos), permitir buscas parametrizadas (pegarTamanhosDosProdutos, pegarComplementos) e, principalmente, formatar os detalhes dos pedidos anteriores (pegarDetalhesPedidosAnteriores), garantindo que os complementos sejam desserializados corretamente para o frontend.
+
+5. Utilidades.php
+PHP
+
+<?php
+
+require_once 'session_init.php';
+require_once 'Conexao.php';
+
+class Utilidades
+{
+    private $conexao;
+
+    public function __construct()
+    {
+        $this->conexao = Conexao::getInstancia();
+    }
+
+    /**
+     * Verifica se o usuário tem um telefone válido na sessão (está logado ou identificado).
+     * @return bool
+     */
+    public static function estaLogado()
+    {
+        return isset($_SESSION['usuario']['telefone']) && !empty($_SESSION['usuario']['telefone']);
+    }
+
+    /**
+     * Pega os endereços de entrega de um cliente (pelo telefone).
+     * @param string $fone Telefone do cliente.
+     * @return array
+     */
+    public function pegarMeusEnderecos($fone)
+    {
+        $sql = "SELECT DISTINCT Endereco, Numero, Bairro, CEP, Referencia 
+                FROM tbl_pedidos 
+                WHERE Telefone = :fone 
+                ORDER BY Codigo DESC LIMIT 5"; // Pega os 5 endereços mais recentes/distintos
+        
+        try {
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->bindParam(':fone', $fone);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            error_log("Erro ao pegar endereços do telefone {$fone}: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Lógica para fechar uma "mesa" (se o sistema usa QR Code/Comanda).
+     * @param string $comanda
+     * @return bool
+     */
+    public function fecharMesaSeNecessario($comanda)
+    {
+        // Implementação da lógica de negócio para fechar ou limpar uma mesa.
+        // Exemplo: Atualizar status de uma tabela `tbl_mesas`.
+        
+        $sql = "UPDATE tbl_mesas SET status = 'FECHADA' WHERE comanda = :comanda AND status = 'ABERTA'";
+        
+        try {
+            $stmt = $this->conexao->prepare($sql);
+            $stmt->bindParam(':comanda', $comanda);
+            return $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Erro ao fechar mesa {$comanda}: " . $e->getMessage());
+            return false;
+        }
+    }
+}
+Resumo: Esta classe atua como um módulo de utilidades e regras de negócio secundárias. Ela fornece funções essenciais de apoio, como a checagem do status de login/identificação do usuário na sessão (estaLogado). Também centraliza operações comuns como a busca dos endereços de entrega mais recentes de um cliente e a lógica de sistemas auxiliares, como o fechamento de mesas/comandas.
+
+6. api.php
+PHP
+
+<?php
+
+ob_start();
+
+require_once 'session_init.php';
+require_once 'Conexao.php';
+require_once 'Empresa.php';
+require_once 'Produtos.php';
+
+try {
+  $metodo = $_SERVER['REQUEST_METHOD'];
+  $recurso = isset($_GET['recurso']) ? $_GET['recurso'] : null;
+  $dados = [];
+  $response_code = 200;
+
+  if ($metodo === 'GET') {
+    switch ($recurso) {
+      case 'empresa':
+        $empresa = new Empresa();
+        $dados = $empresa->pegarDadosDaEmpresa();
+        break;
+      case 'horarios':
+        $empresa = new Empresa();
+        $dados = $empresa->pegarHorariosDaEmpresa();
+        break;
+      case 'produtos':
+        $produtos = new Produtos();
+        $dados = $produtos->pegarTodosOsProdutos();
+        break;
+      case 'categorias':
+        $produtos = new Produtos();
+        $dados = $produtos->pegarCategorias();
+        break;
+      case 'tamanhos':
+        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
+        if ($cod) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarTamanhosDosProdutos($cod);
+        } else {
+            $response_code = 400;
+            $dados = ['message' => 'Código do produto não especificado.'];
+        }
+        break;
+      case 'complementos':
+        $codigos = isset($_GET['codigos']) ? $_GET['codigos'] : null;
+        if ($codigos) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarComplementos($codigos);
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Códigos de complemento não especificados.'];
+        }
+        break;
+      case 'detalhes-produtos':
+        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
+        if ($cod) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarDetalhesDosProdutos($cod);
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Código do produto não especificado.'];
+        }
+        break;
+      case 'ingredientes':
+        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
+        if ($cod) {
+          $produtos = new Produtos();
+          $ingredientes = $produtos->pegarIngredientesDosProdutos($cod);
+          $dados = ['ingredientes' => $ingredientes];
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Código do produto não especificado.'];
+        }
+        break;
+      case 'bordas':
+        $produtos = new Produtos();
+        $dados = $produtos->pegarBordas();
+        break;
+      case 'pedidos-anteriores':
+        $fone = isset($_GET['fone']) ? $_GET['fone'] : null;
+        if ($fone) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarPedidosAnteriores($fone);
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Telefone não especificado.'];
+        }
+        break;
+      case 'detalhes-pedidos-anteriores':
+        $cod = isset($_GET['codigo']) ? $_GET['codigo'] : null;
+        if ($cod) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarDetalhesPedidosAnteriores($cod);
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Código do pedido não especificado.'];
+        }
+        break;
+      case 'produto-selecionado':
+        $dados = isset($_SESSION['produto_selecionado']) ? $_SESSION['produto_selecionado'] : null;
+        break;
+      case 'pegar-carrinho':
+        $dados = isset($_SESSION['carrinho']) ? $_SESSION['carrinho'] : [];
+        break;
+      case 'usuario-logado':
+        $dados = (isset($_SESSION['usuario']['telefone']) && !empty($_SESSION['usuario']['telefone'])) ? $_SESSION['usuario'] : null;
+        break;
+      case 'dados-sessao':
+        $dados = [
+          'usuario' => isset($_SESSION['usuario']) ? $_SESSION['usuario'] : null,
+          'carrinho' => isset($_SESSION['carrinho']) ? $_SESSION['carrinho'] : [],
+        ];
+        break;
+      default:
+        $response_code = 400;
+        $dados = ['message' => 'Recurso GET não especificado.'];
+    }
+  } elseif ($metodo === 'POST') {
+    switch ($recurso) {
+      case 'selecionar-produto':
+        $json_payload = file_get_contents('php://input');
+        $payload = json_decode($json_payload, true);
+        if (isset($payload['produto']) && isset($payload['descricao'])) {
+          $_SESSION['produto_selecionado'] = $payload;
+          $dados = ['message' => 'Dados do produto armazenados na sessão.'];
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Dados do produto inválidos.'];
+        }
+        break;
+      case 'adicionar-ao-carrinho':
+        $json_payload = file_get_contents('php://input');
+        $payload = json_decode($json_payload, true);
+        if (isset($payload) && !empty($payload)) {
+          $_SESSION['carrinho'][] = $payload;
+          $dados = ['message' => 'Produto adicionado ao carrinho.'];
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Dados do produto inválidos para o carrinho.'];
+        }
+        break;
+      case 'limpar-carrinho':
+        $_SESSION['carrinho'] = [];
+        $dados = ['message' => 'Carrinho limpo com sucesso.'];
+        break;
+      case 'remover-item-carrinho':
+        $json_payload = file_get_contents('php://input');
+        $payload = json_decode($json_payload, true);
+        if (isset($payload['index'])) {
+          $index = $payload['index'];
+          if (isset($_SESSION['carrinho'][$index])) {
+            array_splice($_SESSION['carrinho'], $index, 1);
+            $dados = ['message' => 'Produto removido do carrinho.'];
+          } else {
+            $dados = ['message' => 'Índice do produto inválido.'];
+          }
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Índice do produto não especificado.'];
+        }
+        break;
+      default:
+        $response_code = 400;
+        $dados = ['message' => 'Recurso POST não especificado.'];
+    }
+  } else {
+    $response_code = 405;
+    $dados = ['message' => 'Método não permitido.'];
+  }
+
+  http_response_code($response_code);
+  echo json_encode($dados);
+} catch (Exception $e) {
+  http_response_code(500);
+  error_log("Erro na API: " . $e->getMessage());
+  echo json_encode(['message' => 'Ocorreu um erro interno.']);
+}
+
+ob_end_flush();
+exit;
+Resumo: Este arquivo é o controlador de roteamento (router) central da aplicação. Sua função é receber requisições HTTP e:
+
+Delegar a chamada para a classe de negócio (Empresa.php, Produtos.php) com base no $_SERVER['REQUEST_METHOD'] e no parâmetro recurso.
+
+Gerenciar o estado da sessão ($_SESSION['carrinho'], $_SESSION['produto_selecionado'], $_SESSION['usuario']) para todo o fluxo de pedido.
+
+Validar se os parâmetros necessários foram fornecidos (cod, fone).
+
+Definir o código de resposta HTTP (200, 400, 405) e retornar o resultado em JSON, centralizando o tratamento de erros.
+
+7. api.js
+JavaScript
+
+const URL_BASE_API = "controller/api.php";
+
+export async function apiGet(endpoint) {
+  const url = `${URL_BASE_API}?recurso=${endpoint}`;
+  try {
+    const resposta = await fetch(url, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!resposta.ok) {
+      const erroApi = await resposta.json();
+      throw new Error(erroApi.message || resposta.statusText);
+    }
+
+    return await resposta.json();
+  } catch (erro) {
+    console.error("Erro ao buscar dados (GET):", erro);
+    throw erro;
+  }
+}
+
+export async function apiPost(endpoint, payload = {}) {
+  const url = `${URL_BASE_API}?recurso=${endpoint}`;
+  try {
+    const resposta = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!resposta.ok) {
+      const erroApi = await resposta.json();
+      throw new Error(erroApi.message || resposta.statusText);
+    }
+
+    return await resposta.json();
+  } catch (erro) {
+    console.error("Erro ao enviar dados (POST):", erro);
+    throw erro;
+  }
+}
+Resumo: Este módulo JavaScript é a camada de comunicação (driver) do frontend, responsável por toda a interação com o api.php. Sua lógica principal é:
+
+Padronizar a construção da URL, usando o endpoint como parâmetro recurso.
+
+Usar o padrão async/await com fetch para comunicação assíncrona.
+
+Garantir a correta serialização (JSON.stringify no POST) e desserialização (resposta.json()).
+
+Implementar um tratamento de erro HTTP robusto: verifica !resposta.ok (status ≥400), lê a mensagem de erro detalhada do JSON do servidor e lança uma exceção informativa.
+
+8. empresa.js
+JavaScript
+
+import { apiGet } from "./api.js";
+
+export async function carregarEmpresa() {
+  try {
+    const resposta = await apiGet("empresa");
+
+    if (resposta && resposta.empresa && resposta.parametros) {
+      return {
+        empresa: resposta.empresa[0],
+        parametros: resposta.parametros[0],
+      };
+    }
+
+    return { empresa: null, parametros: null };
+  } catch (erro) {
+    return { empresa: null, parametros: null };
+  }
+}
+
+export async function carregarHorarios() {
+  try {
+    const arrayHorarios = await apiGet("horarios");
+    return arrayHorarios || [];
+  } catch (erro) {
+    return [];
+  }
+}
+Resumo: Este módulo atua como a camada de serviço do frontend para acessar dados da empresa.
+
+carregarEmpresa: Realiza a chamada à API e, crucialmente, executa a normalização dos dados (resposta.empresa[0] e resposta.parametros[0]) para transformar os arrays de resultados SQL em objetos JavaScript simples e mais fáceis de consumir pela UI.
+
+Resiliência: Ambas as funções retornam um valor fallback seguro (null ou []) em caso de falha de comunicação ou dados ausentes, prevenindo que a UI trave.
+
+9. produtos.js
+JavaScript
+
+import { apiGet } from "./api.js";
+
+export async function carregarProdutos() {
+  try {
+    const produtos = await apiGet("produtos");
+    return produtos || [];
+  } catch (erro) {
+    return [];
+  }
+}
+
+export async function carregarCategorias() {
+  try {
+    const objCategorias = await apiGet("categorias");
+    return objCategorias || [];
+  } catch (erro) {
+    return [];
+  }
+}
+
+export async function carregarTamanhos(codigo) {
+  if (!codigo) {
+    return [];
+  }
+
+  try {
+    const tamanhos = await apiGet(`tamanhos&cod=${codigo}`);
+    return tamanhos || [];
+  } catch (erro) {
+    return [];
+  }
+}
+
+export async function carregarComplementos(produtoPrincipal) {
+  if (
+    !produtoPrincipal.RequerComplementoCod ||
+    produtoPrincipal.RequerComplemento !== "S"
+  ) {
+    return [];
+  }
+
+  try {
+    const complementos = await apiGet(
+      `complementos&codigos=${produtoPrincipal.RequerComplementoCod}`
+    );
+    return complementos || [];
+  } catch (erro) {
+    return [];
+  }
+}
+
+export async function carregarPedidosAnteriores(fone) {
+  if (!fone) {
+    return [];
+  }
+
+  try {
+    const pedidosAnteriores = await apiGet(`pedidos-anteriores&fone=${fone}`);
+    return pedidosAnteriores || [];
+  } catch (erro) {
+    return [];
+  }
+}
+
+export async function carregarDetalhesPedidosAnteriores(codigo) {
+  if (!codigo) {
+    return [];
+  }
+
+  try {
+    const detalhesPedidosAnteriores = await apiGet(
+      `detalhes-pedidos-anteriores&codigo=${codigo}`
+    );
+    return detalhesPedidosAnteriores || [];
+  } catch (erro) {
+    return [];
+  }
+}
+
+export async function carregarProdutoSelecionado() {
+  try {
+    const produtoSelecionado = await apiGet("produto-selecionado");
+    return produtoSelecionado || null;
+  } catch (erro) {
+    return null;
+  }
+}
+
+export async function carregarCarrinho() {
+  try {
+    const carrinho = await apiGet("pegar-carrinho");
+    return carrinho || [];
+  } catch (erro) {
+    return [];
+  }
+}
+Resumo: Este módulo é a camada de serviço do frontend para produtos e pedidos. Sua principal função é:
+
+Validar a presença de parâmetros (codigo, fone) antes de chamar a API, otimizando o tráfego de rede.
+
+Aplicar regras de negócio do lado do cliente, como a checagem em carregarComplementos para garantir que o produto realmente requer complementos antes de fazer a requisição.
+
+Construir as query strings para chamadas parametrizadas (ex: tamanhos&cod=...).
+
+10. app.js
+JavaScript
+
+import { apiPost } from "./api.js";
+
+import { carregarEmpresa, carregarHorarios } from "./empresa.js";
+import {
+  carregarProdutos,
+  carregarCategorias,
+  carregarTamanhos,
+  carregarPedidosAnteriores,
+  carregarDetalhesPedidosAnteriores,
+  carregarProdutoSelecionado,
+  carregarCarrinho,
+  carregarComplementos,
+} from "./produtos.js";
+
+import { verificarSessao } from "./verificarSessao.js";
+
+import { capturar, criarElemento } from "./capturar.js";
+
+//========================================================================================//
+
+async function verificacaoDaSessao() {
+  const sessao = await verificarSessao();
+  console.log(sessao.usuario);
+  console.log(sessao.carrinho);
+}
+
+//========================================================================================//
+
+async function gerenciarInfoEmpresa() {
+  try {
+    const empresa = await carregarEmpresa();
+
+    if (!empresa.empresa || !empresa.parametros) {
+      console.error("Dados da empresa não encontrados ou a requisição falhou.");
+      return;
+    }
+
+    const title = capturar("title");
+    if (title) {
+      title.textContent = empresa.empresa.Fantasia;
+    }
+
+    const tituloEmpresa = capturar("#titulo-empresa");
+    if (tituloEmpresa) {
+      tituloEmpresa.textContent = empresa.empresa.Fantasia;
+    }
+
+    const cidadeEmpresa = capturar("#cidade-empresa");
+    if (cidadeEmpresa) {
+      cidadeEmpresa.textContent = `${empresa.empresa.Cidade} - SP`;
+    }
+
+    const infoStatus = capturar(".status > span", true);
+
+    if (infoStatus) {
+      if (infoStatus[0]) {
+        infoStatus[0].textContent =
+          empresa.parametros.aberto === "S" ? "ABERTO" : "FECHADO";
+        infoStatus[0].style.color =
+          empresa.parametros.aberto === "S" ? "#080" : "#c00";
+
+        infoStatus[0].addEventListener("click", () => {
+          Swal.fire({
+            text: `ESTAMOS ${
+              empresa.parametros.aberto === "S" ? "ABERTOS" : "FECHADOS"
+            }`,
+            icon: empresa.parametros.aberto === "S" ? "success" : "error",
+            backdrop: "rgba(0,0,0,0.7)",
+            confirmButtonColor:
+              empresa.parametros.aberto === "S" ? "#080" : "#c00",
+          });
+        });
+      }
+
+      if (infoStatus[1]) {
+        infoStatus[1].innerHTML =
+          empresa.parametros.ativaentrega === "N"
+            ? "RETIRAR | <del>ENTREGAR</del>"
+            : "RETIRAR | ENTREGAR";
+
+        infoStatus[1].addEventListener("click", () => {
+          Swal.fire({
+            text: `ENTREGA ESTÁ ${
+              empresa.parametros.ativaentrega === "N" ? "DESATIVADA" : "ATIVA"
+            }`,
+            icon: empresa.parametros.ativaentrega === "S" ? "success" : "error",
+            backdrop: "rgba(0,0,0,0.7)",
+            confirmButtonColor:
+              empresa.parametros.ativaentrega === "S" ? "#080" : "#c00",
+          });
+        });
+      }
+
+      if (infoStatus[2]) {
+        infoStatus[2].innerHTML = `<i class="fa-regular fa-clock"></i> ${empresa.parametros.tempoentrega}`;
+
+        infoStatus[2].addEventListener("click", () => {
+          Swal.fire({
+            text: ` TEMPO DE ENTREGA É DE ${empresa.parametros.tempoentrega}`,
+            icon: "info",
+            backdrop: "rgba(0,0,0,0.7)",
+            confirmButtonColor: "#080",
+          });
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Falha ao gerenciar informações da empresa:", error);
+  }
+}
+
+//========================================================================================//
+
+async function gerenciarCategoriasMercadorias() {
+  try {
+    const produtos = await carregarProdutos();
+    const categorias = await carregarCategorias();
+
+    const navCategorias = capturar(".nav-categorias");
+    const sectionProdutos = capturar("#produtos");
+
+    if (!navCategorias || !sectionProdutos) {
+      return;
+    }
+
+    if (categorias.length > 0) {
+      categorias.forEach((categoria) => {
+        const linkCategoria = document.createElement("a");
+        linkCategoria.href = `#${categoria.descricao}`;
+        linkCategoria.textContent = categoria.descricao;
+        navCategorias.insertAdjacentElement("beforeend", linkCategoria);
+      });
+    }
+
+    if (produtos.length > 0 && categorias.length > 0) {
+      categorias.forEach((categoria) => {
+        const h3Categoria = document.createElement("h3");
+        h3Categoria.id = categoria.descricao;
+        h3Categoria.textContent = categoria.descricao;
+        sectionProdutos.insertAdjacentElement("beforeend", h3Categoria);
+
+        const produtosDaCategoria = produtos.filter(
+          (item) => item.categoria === categoria.descricao
+        );
+
+        produtosDaCategoria.forEach((mercadoria) => {
+          const preco = Number(mercadoria.Venda).toFixed(2);
+
+          const observacaoProduto = mercadoria.Observacao
+            ? mercadoria.Observacao
+            : "";
+
+          const boxDoProduto = criarElemento("div");
+          boxDoProduto.classList.add("box-produto");
+
+          const imagemItem = criarElemento("div");
+          imagemItem.classList.add("imagem-item");
+
+          const urlImagemProduto = "./images/empresa.jpg";
+
+          imagemItem.innerHTML = `<img src="${urlImagemProduto}" alt="produto" />`;
+
+          const produtoItem = criarElemento("div");
+          produtoItem.classList.add("produto-item");
+
+          produtoItem.innerHTML = `
+          <span class="descricao">${mercadoria.Descricao}</span>
+          <span class="observacao-produto">${observacaoProduto}</span>
+          <span class="preco">R$ ${preco}</span>
+          `;
+
+          boxDoProduto?.addEventListener("click", async () => {
+            const tamanhos = await carregarTamanhos(mercadoria.Codigo);
+            console.log(tamanhos);
+
+            let tamanhoFinal = null;
+            let precoFinal = Number(mercadoria.Venda).toFixed(2);
+            let saboresPermitidosFinal = "";
+            let permiteBordaFinal = "";
+
+            if (tamanhos && tamanhos.length > 0) {
+              let htmlSwal = `
+            <style>
+                .tamanho-button-group input[type="radio"] { display: none; }
+                .tamanho-button-group label {
+                    display: inline-block; padding: 8px 15px; margin: 5px;
+                    border: 2px solid #ccc; border-radius: 20px; cursor: pointer;
+                    font-weight: bold; transition: all 0.2s; width: 200px; text-align: center;
+                }
+                .tamanho-button-group input[type="radio"]:checked + label {
+                    background-color: #080; color: white; border-color: #080;
+                    box-shadow: 0 0 5px rgba(0, 128, 0, 0.5);
+                }
+            </style>
+            <div style="text-align: center; margin-top: 10px;">
+        `;
+
+              tamanhos.forEach((tamanho) => {
+                htmlSwal += `
+                <div class="tamanho-button-group" style="display: inline-block;">
+                    <input 
+                        type="radio" 
+                        id="${tamanho.Tamanho}" 
+                        name="tamanho-produto" 
+                        value="${tamanho.Tamanho}|${Number(
+                  tamanho.Valor
+                ).toFixed(2)}|${tamanho.Sabores}|${tamanho.PermiteBorda}" 
+                    />
+                    <label for="${tamanho.Tamanho}">
+                        ${tamanho.Tamanho} - R$ ${Number(tamanho.Valor).toFixed(
+                  2
+                )}
+                    </label>
+                </div>
+            `;
+              });
+
+              htmlSwal += `</div>`;
+
+              const result = await Swal.fire({
+                title: `SELECIONE O TAMANHO:`,
+                html: htmlSwal,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#080",
+                cancelButtonText: "Cancelar",
+                cancelButtonColor: "#c00",
+                focusConfirm: false,
+                preConfirm: () => {
+                  const radioSelecionado = document.querySelector(
+                    'input[name="tamanho-produto"]:checked'
+                  );
+                  if (!radioSelecionado) {
+                    Swal.showValidationMessage(
+                      "Por favor, selecione um tamanho."
+                    );
+                    return false;
+                  }
+                  return radioSelecionado.value;
+                },
+              });
+
+              if (result.isConfirmed) {
+                const [tamanho, preco, sabores, permiteBorda] =
+                  result.value.split("|");
+                tamanhoFinal = tamanho;
+                precoFinal = preco;
+                saboresPermitidosFinal = sabores;
+                permiteBordaFinal = permiteBorda;
+              } else {
+                return;
+              }
+            }
+
+            const payload = {
+              categoria: mercadoria.categoria,
+              produto: mercadoria.Codigo,
+              descricao: mercadoria.Descricao,
+              observacaoProduto: observacaoProduto,
+              preco: precoFinal,
+              imgProduto: urlImagemProduto,
+              RequerComplemento: mercadoria.RequerComplemento,
+              RequerComplementoCod: mercadoria.RequerComplementoCod,
+              tamanho: tamanhoFinal,
+              saboresPermitidos: saboresPermitidosFinal,
+              PermiteBorda: permiteBordaFinal,
+            };
+
+            try {
+              await apiPost("selecionar-produto", payload);
+              window.location.href = "selecionar.html";
+            } catch (erro) {
+              console.error("Erro ao enviar dados para a API:", erro.message);
+              Swal.fire({
+                text: "Ocorreu um erro ao selecionar o produto. Tente novamente.",
+                icon: "error",
+                backdrop: "rgba(0,0,0,0.7)",
+                confirmButtonColor: "#c00",
+              });
+            }
+          });
+
+          boxDoProduto?.append(produtoItem, imagemItem);
+          sectionProdutos?.appendChild(boxDoProduto);
+        });
+      });
+    }
+  } catch (error) {
+    console.error("Falha ao gerenciar categorias e mercadorias:", error);
+  }
+}
+
+//========================================================================================//
+
+async function gerenciarAside() {
+  try {
+    const empresa = await carregarEmpresa();
+    const horarios = await carregarHorarios();
+
+    if (!empresa.empresa || !empresa.parametros || !horarios) {
+      console.error("Dados de empresa ou horários não encontrados.");
+      return;
+    }
+
+    const h3Aside = capturar("aside h3");
+    if (h3Aside) {
+      h3Aside.textContent = `${empresa.empresa.Endereco}, ${empresa.empresa.Numero}`;
+    }
+
+    const h4Aside = capturar("aside h4");
+    if (h4Aside) {
+      h4Aside.textContent = `${empresa.empresa.Bairro}`;
+    }
+
+    const tdPreparo = capturar(".tabela1 td:nth-of-type(1)");
+    if (tdPreparo) {
+      tdPreparo.textContent = empresa.parametros.tempoentrega;
+    }
+
+    const tdRetirar = capturar(".tabela1 td:nth-of-type(2)");
+    if (tdRetirar) {
+      tdRetirar.textContent = "SIM";
+    }
+
+    const tdEntregar = capturar(".tabela1 td:nth-of-type(3)");
+    if (tdEntregar) {
+      tdEntregar.textContent =
+        empresa.parametros.ativaentrega === "S" ? "SIM" : "NÃO";
+    }
+
+    const tabelaHorarios = capturar(".tabela2 tbody");
+
+    if (tabelaHorarios && horarios.length > 0) {
+      const diasDaSemana = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
+
+      horarios.forEach((item, index) => {
+        const tr = document.createElement("tr");
+
+        const tdDia = document.createElement("td");
+        if (tdDia) {
+          tdDia.textContent = diasDaSemana[index];
+          tr.appendChild(tdDia);
+        }
+
+        const tdAbertura = document.createElement("td");
+        if (tdAbertura) {
+          tdAbertura.textContent = item.abertura;
+          tr.appendChild(tdAbertura);
+        }
+
+        const tdFechamento = document.createElement("td");
+        if (tdFechamento) {
+          tdFechamento.textContent = item.fechamento;
+          tr.appendChild(tdFechamento);
+        }
+
+        if (tabelaHorarios) {
+          tabelaHorarios.appendChild(tr);
+        }
+      });
+    }
+
+    const abertoFechado = capturar(".fechado-aberto");
+    if (abertoFechado) {
+      abertoFechado.innerHTML =
+        empresa.parametros.aberto === "S"
+          ? "<i class='fa-solid fa-door-open'></i> ESTAMOS [ ABERTOS ]"
+          : "<i class='fa-solid fa-door-closed'></i> ESTAMOS [ FECHADOS ]";
+
+      abertoFechado.style.color =
+        empresa.parametros.aberto === "S" ? "#080" : "#c00";
+    }
+
+    const contatoEmpresa = capturar(".contato-empresa");
+    if (contatoEmpresa) {
+      contatoEmpresa.textContent =
+        empresa.empresa.Telefone != null
+          ? `ENTRE EM CONTATO ${empresa.empresa.Telefone}`
+          : "";
+
+      contatoEmpresa.style.display =
+        empresa.empresa.Telefone != null ? "block" : "none";
+    }
+
+    const logoEmpresa = capturar("#logo-empresa");
+    const fechar = capturar("aside > i");
+    const asideBox = capturar("aside");
+
+    if (logoEmpresa && asideBox) {
+      logoEmpresa.addEventListener("click", () => {
+        asideBox.classList.add("aparecer");
+      });
+    }
+
+    if (fechar && asideBox) {
+      fechar.addEventListener("click", () => {
+        asideBox.classList.remove("aparecer");
+      });
+    }
+  } catch (error) {
+    console.error("Falha ao gerenciar o aside:", error);
+  }
+}
+
+//========================================================================================//
+
+async function gerenciarPedidosAnteriores() {
+  try {
+    const sessao = await verificarSessao();
+    const foneDoUsuario = sessao.usuario.telefone;
+    const pedidosAnteriores = await carregarPedidosAnteriores(foneDoUsuario);
+
+    const footer = capturar("footer");
+    const abrirFooter = capturar("footer > .footer-inicial");
+    const fecharFooter = capturar("footer .fa-x");
+    const sectionPedidosAnteriores = capturar(".pedidos-anteriores");
+
+    if (abrirFooter && footer) {
+      abrirFooter.addEventListener("click", () => {
+        footer.classList.add("footer-aberto");
+        document.body.classList.add("no-scroll");
+      });
+    }
+
+    if (fecharFooter && footer) {
+      fecharFooter.addEventListener("click", () => {
+        footer.classList.remove("footer-aberto");
+        document.body.classList.remove("no-scroll");
+      });
+    }
+
+    if (Array.isArray(pedidosAnteriores) && pedidosAnteriores.length > 0) {
+      pedidosAnteriores.forEach((pedido) => {
+        const divPedido = criarElemento("div");
+        divPedido.classList.add("pedido-item");
+
+        const dataCompleta = new Date(`${pedido.Data}T${pedido.Hora}`);
+
+        const opcoesDeFormato = {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        };
+
+        const dataFormatada = new Intl.DateTimeFormat(
+          "pt-BR",
+          opcoesDeFormato
+        ).format(dataCompleta);
+
+        const dataHoraPedido = criarElemento("p");
+        dataHoraPedido.innerHTML = `<i class="fa-solid fa-calendar-days"></i> ${dataFormatada} - ${pedido.Hora.substring(
+          0,
+          5
+        )}`;
+
+        const botaoDetalhes = criarElemento("button");
+        botaoDetalhes.classList.add("detalhes-pedido-btn");
+        botaoDetalhes.innerHTML = `<i class='fa-solid fa-circle-info'></i> Detalhes <i class='fa-solid fa-arrow-pointer'></i>`;
+
+        const valorPedido = criarElemento("p");
+        valorPedido.innerHTML = `<i class='fa-solid fa-money-bill-wave'></i> ${pedido.totalpedido}`;
+
+        divPedido.append(dataHoraPedido, botaoDetalhes, valorPedido);
+
+        if (sectionPedidosAnteriores) {
+          sectionPedidosAnteriores.appendChild(divPedido);
+        }
+
+        botaoDetalhes.addEventListener("click", () => {
+          mostrarDetalhesPedidosAnteriores(pedido.Codigo);
+        });
+      });
+    } else {
+      console.log(
+        "Nenhum pedido anterior encontrado ou a resposta da API não foi um array.",
+        pedidosAnteriores
+      );
+    }
+  } catch (error) {
+    console.error("Falha ao gerenciar pedidos anteriores:", error);
+  }
+}
+
+//========================================================================================//
+
+async function mostrarDetalhesPedidosAnteriores(codigo) {
+  try {
+    const detalhesPedidosAnteriores = await carregarDetalhesPedidosAnteriores(
+      codigo
+    );
+
+    let dataHora = "";
+    let totalPedido = "";
+
+    if (detalhesPedidosAnteriores && detalhesPedidosAnteriores.length > 0) {
+      const obj = detalhesPedidosAnteriores[0];
+      const dataCompleta = new Date(`${obj.Data}T${obj.Hora}`);
+      const opcoesDeFormato = {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      };
+
+      const dataFormatada = new Intl.DateTimeFormat(
+        "pt-BR",
+        opcoesDeFormato
+      ).format(dataCompleta);
+      const horaSimplificada = obj.Hora.substring(0, 5);
+      dataHora = `${dataFormatada} - ${horaSimplificada}`;
+    }
+
+    let conteudoHtml = "<ul>";
+
+    if (detalhesPedidosAnteriores) {
+      detalhesPedidosAnteriores.forEach((obj) => {
+        totalPedido = obj.totalpedido;
+
+        if (obj.Complementos && Array.isArray(obj.Complementos)) {
+          conteudoHtml += `<li><b>${obj.Descricao}</b> <b>${Number(
+            obj.Valor
+          ).toFixed(2)}</b></li>`;
+
+          if (obj.Complementos.length > 0) {
+            conteudoHtml += "<ul>";
+            obj.Complementos.forEach((comp) => {
+              conteudoHtml += `<li><span>${
+                comp.DescricaoComp
+              }</span> <span>${Number(comp.Valor).toFixed(2)}</span></li>`;
+            });
+            conteudoHtml += "</ul>";
+          }
+        } else if (obj.TaxaTransp) {
+          conteudoHtml += `<li style="color: #080;"><span>Taxa de Transporte:</span> <span>${Number(
+            obj.TaxaTransp
+          ).toFixed(2)}</span></li>`;
+        }
+      });
+    }
+
+    conteudoHtml += "</ul>";
+
+    conteudoHtml += `<p style="color: #c00;"><span>Total do Pedido:</span> <span>${Number(
+      totalPedido
+    ).toFixed(2)}</span></p>`;
+
+    Swal.fire({
+      title: dataHora,
+      html: conteudoHtml,
+      backdrop: "rgba(0,0,0,0.7)",
+      confirmButtonColor: "#080",
+    });
+  } catch (error) {
+    console.error("Falha ao carregar detalhes do pedido:", error);
+  }
+}
+
+//========================================================================================//
+
+async function gerenciarProdutoSelecionado() {
+  try {
+    const produtoSelecionado = await carregarProdutoSelecionado();
+
+    const imgProdutoHeader = capturar("header img");
+    const iconeLupa = capturar(".fa-magnifying-glass-plus");
+    const tituloProduto = capturar(".box-produto h3");
+    const descricaoProduto = capturar(".box-produto small");
+    const precoProduto = capturar(".box-produto .agrupar span");
+    const btnMinusPrincipal = capturar(
+      ".box-produto .agrupar .fa-minus-circle"
+    );
+    const btnPlusPrincipal = capturar(".box-produto .agrupar .fa-plus-circle");
+    const inputQtdPrincipal = capturar(".box-produto .agrupar input");
+    const areaObservacaoCliente = capturar("#observacao-cliente");
+    const btnAdicionar = capturar("#btn-adicionar");
+
+    if (imgProdutoHeader && produtoSelecionado?.imgProduto) {
+      imgProdutoHeader.src = produtoSelecionado.imgProduto;
+
+      iconeLupa?.addEventListener("click", () => {
+        Swal.fire({
+          title: produtoSelecionado.descricao,
+          html: `<img src="${produtoSelecionado.imgProduto}" />`,
+          backdrop: "rgba(0,0,0,0.7)",
+          confirmButtonColor: "#080",
+        });
+      });
+    }
+
+    if (tituloProduto && produtoSelecionado) {
+      tituloProduto.textContent = produtoSelecionado.descricao;
+    }
+
+    if (descricaoProduto && produtoSelecionado) {
+      descricaoProduto.textContent = produtoSelecionado.observacaoProduto;
+    }
+
+    if (precoProduto && produtoSelecionado) {
+      precoProduto.textContent = `R$ ${produtoSelecionado.preco}`;
+    }
+
+    if (btnMinusPrincipal && btnPlusPrincipal && inputQtdPrincipal) {
+      btnMinusPrincipal.addEventListener("click", () => {
+        const valorAtual = Number(inputQtdPrincipal.value);
+        if (valorAtual > 1) {
+          inputQtdPrincipal.value = valorAtual - 1;
+        }
+      });
+
+      btnPlusPrincipal.addEventListener("click", () => {
+        const valorAtual = Number(inputQtdPrincipal.value);
+        inputQtdPrincipal.value = valorAtual + 1;
+      });
+    }
+
+    if (
+      produtoSelecionado?.RequerComplemento === "S" &&
+      produtoSelecionado?.RequerComplementoCod
+    ) {
+      const complementos = await carregarComplementos(produtoSelecionado);
+      const mainSelecionar = capturar(".main-selecionar");
+      const sectionComplementos = criarElemento("section");
+      sectionComplementos.id = "section-complementos";
+
+      if (complementos.length > 0) {
+        complementos.forEach((complemento) => {
+          const divComplemento = criarElemento("div");
+          divComplemento.classList.add("div-complemento");
+
+          const conteudoComplemento = `
+            <div class="complemento-descricao-valor">
+              <p>${complemento.Descricao}</p>
+              <small>R$ ${Number(complemento.Venda).toFixed(2)}</small>
+            </div>
+            <div class="qtd-complemento">
+              <i class="comp fa-solid fa-minus-circle"></i>
+              <input
+                  type="number"
+                  name="qtd-complemento"
+                  value="0"
+                  min="1"
+                  readonly
+                />
+              <i class="comp fa-solid fa-plus-circle"></i>
+            </div>
+          `;
+
+          divComplemento.innerHTML = conteudoComplemento;
+          sectionComplementos?.appendChild(divComplemento);
+        });
+        mainSelecionar?.appendChild(sectionComplementos);
+      }
+
+      const btnMinusComplemento = capturar(".comp.fa-minus-circle", true);
+      const btnPlusComplemento = capturar(".comp.fa-plus-circle", true);
+
+      if (btnMinusComplemento) {
+        btnMinusComplemento.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const inputQtdComplemento = btn
+              .closest(".div-complemento")
+              .querySelector("[name='qtd-complemento']");
+
+            if (inputQtdComplemento) {
+              const valorAtualComplemento = Number(inputQtdComplemento.value);
+              if (valorAtualComplemento > 0) {
+                inputQtdComplemento.value = valorAtualComplemento - 1;
+              }
+            }
+          });
+        });
+      }
+
+      if (btnPlusComplemento) {
+        btnPlusComplemento.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const inputQtdComplemento = btn
+              .closest(".div-complemento")
+              .querySelector("[name='qtd-complemento']");
+
+            if (inputQtdComplemento) {
+              const valorAtualComplemento = Number(inputQtdComplemento.value);
+              inputQtdComplemento.value = valorAtualComplemento + 1;
+            }
+          });
+        });
+      }
+    }
+
+    btnAdicionar?.addEventListener("click", async () => {
+      if (inputQtdPrincipal && areaObservacaoCliente && produtoSelecionado) {
+        const quantidadePrincipal = Number(inputQtdPrincipal.value);
+        const observacaoCliente = areaObservacaoCliente.value;
+        const precoUnitarioPrincipal = Number(produtoSelecionado.preco);
+
+        const complementosSelecionados = obterComplementosSelecionados();
+
+        const custoTotalComplementos = complementosSelecionados.reduce(
+          (total, comp) => {
+            return total + Number(comp.totalComplemento);
+          },
+          0
+        );
+
+        const precoUnitarioComComplementos =
+          precoUnitarioPrincipal + custoTotalComplementos;
+        const precoTotalDoItem = (
+          precoUnitarioComComplementos * quantidadePrincipal
+        ).toFixed(2);
+
+        const montandoCarrinho = {
+          ...produtoSelecionado,
+
+          preco: precoTotalDoItem,
+          quantidade: quantidadePrincipal,
+          observacaoCliente: observacaoCliente,
+          complementos: complementosSelecionados,
+        };
+
+        try {
+          const resposta = await apiPost(
+            "adicionar-ao-carrinho",
+            montandoCarrinho
+          );
+          if (resposta.message) {
+            console.log(resposta.message);
+            window.location.href = "./carrinho.html";
+            areaObservacaoCliente.value = "";
+          }
+        } catch (erro) {
+          console.error("Falha ao adicionar ao carrinho:", erro.message);
+          Swal.fire({
+            text: "Ocorreu um erro ao adicionar o produto. Tente novamente.",
+            icon: "error",
+            backdrop: "rgba(0,0,0,0.7)",
+            confirmButtonColor: "#c00",
+          });
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Falha ao gerenciar produto selecionado:", error);
+    window.location.href = "./index.html";
+  }
+}
+
+//========================================================================================//
+
+function obterComplementosSelecionados() {
+  const complementos = [];
+
+  const divsComplemento = capturar(".div-complemento", true);
+
+  if (!divsComplemento) {
+    return complementos;
+  }
+
+  divsComplemento.forEach((div) => {
+    const inputQtd = div.querySelector("[name='qtd-complemento']");
+    const qtd = Number(inputQtd.value);
+
+    if (qtd > 0) {
+      const descricaoElement = div.querySelector(
+        ".complemento-descricao-valor p"
+      );
+      const valorElement = div.querySelector(
+        ".complemento-descricao-valor small"
+      );
+
+      const valorTexto = valorElement.textContent.replace("R$ ", "").trim();
+      const valorUnitario = Number(valorTexto);
+
+      complementos.push({
+        Descricao: descricaoElement.textContent.trim(),
+        Venda: valorUnitario.toFixed(2),
+        quantidade: qtd,
+        totalComplemento: (valorUnitario * qtd).toFixed(2),
+      });
+    }
+  });
+
+  return complementos;
+}
+
+//========================================================================================//
+
+async function gerenciarCarrinho() {
+  try {
+    const carrinho = await carregarCarrinho();
+    const iconeLixeira = capturar("#nav-voltar .fa-trash");
+    const sectionProdutoBox = capturar("#produto-box-carrinho");
+    const btnConfirmar = capturar(".btn-confirmar");
+
+    function renderizarProdutos(produtos) {
+      if (!sectionProdutoBox) {
+        return;
+      }
+
+      sectionProdutoBox.innerHTML = "";
+
+      if (produtos.length > 0) {
+        produtos.forEach((produto, index) => {
+          const divCadaProduto = criarElemento("div");
+          divCadaProduto.classList.add("div-cada-produto");
+
+          const divCabecalhoProduto = criarElemento("div");
+          divCabecalhoProduto.classList.add("produto-cabecalho");
+
+          const precoTotalItem = Number(produto.preco).toFixed(2);
+
+          divCabecalhoProduto.innerHTML = `
+              <span>${produto.quantidade}x ${produto.descricao}</span>
+              <span>R$ ${precoTotalItem}<i class="fa-solid fa-ellipsis-vertical"></i></span>
+          `;
+
+          divCadaProduto.appendChild(divCabecalhoProduto);
+
+          if (
+            produto.complementos &&
+            Array.isArray(produto.complementos) &&
+            produto.complementos.length > 0
+          ) {
+            const divComplementosContainer = criarElemento("div");
+
+            divComplementosContainer.classList.add("complementos-container");
+
+            produto.complementos.forEach((comp) => {
+              const divComplementoItem = criarElemento("div");
+              divComplementoItem.classList.add("complemento-item");
+
+              const precoComplementoTotal = Number(
+                comp.totalComplemento
+              ).toFixed(2);
+
+              divComplementoItem.innerHTML = `
+                  <span class="comp-desc">${comp.quantidade}x ${comp.Descricao}</span>
+                  <span class="comp-preco">R$ ${precoComplementoTotal}</span>
+              `;
+
+              divComplementosContainer.appendChild(divComplementoItem);
+            });
+
+            divCadaProduto.appendChild(divComplementosContainer);
+          }
+
+          sectionProdutoBox.append(divCadaProduto);
+
+          const elipse = divCabecalhoProduto.querySelector(
+            ".fa-ellipsis-vertical"
+          );
+          if (elipse) {
+            elipse.addEventListener("click", async () => {
+              const resultadoLimparItem = await Swal.fire({
+                title: "Excluir este item?",
+                text: "Você não poderá reverter esta ação depois!",
+                icon: "question",
+                backdrop: "rgba(0,0,0,0.7)",
+                showCancelButton: true,
+                confirmButtonText: "Sim, excluir",
+                confirmButtonColor: "#080",
+                cancelButtonText: "Não, cancelar",
+                cancelButtonColor: "#c00",
+              });
+
+              if (resultadoLimparItem.isConfirmed) {
+                try {
+                  const respostaApi = await apiPost("remover-item-carrinho", {
+                    index: index,
+                  });
+                  if (respostaApi.message) {
+                    Swal.fire(
+                      "Item Removido!",
+                      respostaApi.message,
+                      "success"
+                    ).then(() => {
+                      renderizarProdutos(
+                        produtos.filter((_, i) => i !== index)
+                      );
+
+                      if (produtos.length === 1) {
+                        setTimeout(() => {
+                          window.location.href = "./index.html";
+                        }, 500);
+                      }
+                    });
+                  } else {
+                    Swal.fire("Erro", "Índice do produto inválido.", "error");
+                  }
+                } catch (erro) {
+                  Swal.fire("Erro", erro.message, "error");
+                }
+              } else if (resultadoLimparItem.isDismissed) {
+                Swal.fire(
+                  "Ação cancelada",
+                  "O item não foi alterado.",
+                  "error"
+                );
+              }
+            });
+          }
+        });
+      } else {
+        sectionProdutoBox.innerHTML =
+          "<p class='carrinho-vazio'>O carrinho está vazio.</p>";
+      }
+    }
+
+    renderizarProdutos(carrinho);
+
+    iconeLixeira?.addEventListener("click", async () => {
+      const resultadoLimparCarrinho = await Swal.fire({
+        title: "Limpar Carrinho?",
+        text: "Você não poderá reverter esta ação depois!",
+        icon: "question",
+        backdrop: "rgba(0,0,0,0.7)",
+        showCancelButton: true,
+        confirmButtonText: "Sim, limpar",
+        confirmButtonColor: "#080",
+        cancelButtonText: "Não, cancelar",
+        cancelButtonColor: "#c00",
+      });
+
+      if (resultadoLimparCarrinho.isConfirmed) {
+        try {
+          const respostaApi = await apiPost("limpar-carrinho");
+          if (respostaApi.message) {
+            Swal.fire("Carrinho Limpo!", respostaApi.message, "success").then(
+              () => {
+                renderizarProdutos([]);
+                setTimeout(() => {
+                  window.location.href = "./index.html";
+                }, 500);
+              }
+            );
+          }
+        } catch (erro) {
+          Swal.fire("Erro", erro.message, "error");
+        }
+      } else if (resultadoLimparCarrinho.isDismissed) {
+        Swal.fire("Ação cancelada", "O carrinho não foi alterado.", "error");
+      }
+    });
+
+    btnConfirmar?.addEventListener("click", () => {
+      // Lógica de finalização do pedido.
+    });
+  } catch (error) {
+    console.error("Falha ao gerenciar o carrinho:", error);
+    // Exibe uma mensagem de erro ou redireciona.
+  }
+}
+
+//========================================================================================//
+
+document.addEventListener("DOMConte
+Resumo: Este arquivo é o motor da experiência do usuário (UX) do frontend. Ele orquestra todas as chamadas de serviço e implementa a lógica de manipulação da interface:
+
+Renderização Dinâmica: Busca dados da empresa e catálogo, e cria elementos HTML dinamicamente para exibir o status, horários e lista de produtos.
+
+Fluxo de Pedido: Em gerenciarCategoriasMercadorias, ele implementa o fluxo de seleção de produto, incluindo a exibição de seleção de tamanhos via SweetAlert e a armazenagem do item selecionado na sessão (selecionar-produto) antes de redirecionar.
+
+Lógica Financeira: Em gerenciarProdutoSelecionado, ele implementa o cálculo do custo total do item, somando o preço base do produto com o custo total dos complementos selecionados, e envia o objeto final para o carrinho do servidor.
+
+Gerenciamento de Carrinho: Renderiza os itens do carrinho e lida com a lógica de remoção de itens e limpeza total do carrinho, usando pop-ups de confirmação interativos (SweetAlert) antes de fazer chamadas apiPost ao servidor.
