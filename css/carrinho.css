@@ -80,6 +80,13 @@ header .fa-magnifying-glass-plus {
   justify-content: space-between;
 }
 
+#produto-box-carrinho
+  .div-cada-produto
+  .produto-cabecalho
+  .fa-ellipsis-vertical {
+  font-size: 1.3em;
+}
+
 #produto-box-carrinho .div-cada-produto .complementos-container {
   padding: 0 1.3em 0 0.5em;
 }

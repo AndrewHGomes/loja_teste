@@ -106,12 +106,12 @@ header .fa-magnifying-glass-plus {
 
 .fa-plus-circle {
   color: #080;
-  font-size: 1.1em;
+  font-size: 1.3em;
 }
 
 .fa-minus-circle {
   color: #c00;
-  font-size: 1.1em;
+  font-size: 1.3em;
 }
 
 #produto-box fieldset legend {
@@ -141,9 +141,10 @@ header .fa-magnifying-glass-plus {
   border: 1px solid #ddd;
   border-radius: 2px;
   box-shadow: var(--sombra-box);
-  padding: 0.8em;
   width: 100%;
+  padding: 0.8em 0.5em;
   display: flex;
+  align-items: center;
   justify-content: space-between;
 }
 
@@ -160,7 +161,7 @@ header .fa-magnifying-glass-plus {
 #section-complementos .div-complemento .qtd-complemento input {
   border: none;
   outline: none;
-  width: 2em;
+  width: 1.5em;
   font-size: 1em;
   text-align: center;
   padding: 0 0.1em;

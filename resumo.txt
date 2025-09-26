@@ -1907,7 +1907,6 @@ async function gerenciarCarrinho() {
 
 //========================================================================================//
 
-document.addEventListener("DOMConte
 Resumo: Este arquivo é o motor da experiência do usuário (UX) do frontend. Ele orquestra todas as chamadas de serviço e implementa a lógica de manipulação da interface:
 
 Renderização Dinâmica: Busca dados da empresa e catálogo, e cria elementos HTML dinamicamente para exibir o status, horários e lista de produtos.

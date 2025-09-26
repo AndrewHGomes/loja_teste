@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="./css/global.css" />
+    <link rel="stylesheet" href="./css/finalizar.css" />
+    <script src="./javascript/sweetalert2.all.min.js"></script>
+    <script type="module" src="./javascript/app.js" defer></script>
+    <script type="module" src="./javascript/alpine.min.js" defer></script>
+    <title></title>
+  </head>
+  <body>
+    <nav id="nav-voltar">
+      <a href="./carrinho.html">
+        <i class="fa-solid fa-arrow-left"></i>
+        VOLTAR
+      </a>
+    </nav>
+    <main>
+      <section id="checkout-container">
+        <h3>Tipo de Entrega</h3>
+        <div class="tipo">
+          <div id="info-entrega-atual" class="group"></div>
+          <a href="#" onclick="alterarTipoEntrega()">Alterar</a>
+        </div>
+
+        <div id="bloco-retirada" style="display: none">
+          <h3 class="retiretext">Retire seu Pedido Aqui</h3>
+          <div class="retiraendereco">
+            <p class="title" id="endereco-loja"></p>
+            <span id="cidade-loja"></span>
+          </div>
+        </div>
+
+        <div id="bloco-entrega" style="display: none"></div>
+
+        <h3>Totais</h3>
+        <div class="row">
+          <p>Produtos</p>
+          <p id="total-produtos"></p>
+        </div>
+        <div class="row taxa" id="bloco-taxa">
+          <p>Taxa Entrega</p>
+          <p id="total-taxa"></p>
+        </div>
+        <input type="hidden" id="taxatransporte" value="0" />
+        <div class="row">
+          <b>Total</b>
+          <b id="total-geral"></b>
+        </div>
+
+        <h3>Meus Dados</h3>
+        <fieldset class="nomef">
+          <legend>Nome</legend>
+          <input type="text" id="input-nome" class="nome" required />
+        </fieldset>
+        <div class="alert-name">
+          Campo nome deve conter no minimo 2 caracteres
+        </div>
+        <fieldset class="fonef">
+          <legend>Telefone</legend>
+          <input type="text" id="input-fone" class="fone" readonly />
+        </fieldset>
+
+        <div class="fpagamento">
+          <h3>Forma de Pagamento</h3>
+
+          <label class="radio din">
+            <input
+              type="radio"
+              required
+              class="fp"
+              name="fpagamento"
+              value="D"
+              onclick="exibirTroco()"
+            />Dinheiro
+          </label>
+          <input
+            type="number"
+            id="input-troco"
+            class="radio troco"
+            placeholder="Levar Troco Para ?"
+            value="0"
+            style="display: none"
+          />
+
+          <label class="radio car">
+            <input
+              type="radio"
+              required
+              class="fpp"
+              name="fpagamento"
+              value="C"
+              onclick="ocultarTroco()"
+            />Cartão
+          </label>
+
+          <button
+            id="btn-finalizar"
+            class="confirm"
+            onclick="finalizarPedidoCompleto()"
+          >
+            Finalizar
+          </button>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -68,6 +68,16 @@ try {
           $dados = ['message' => 'Código do produto não especificado.'];
         }
         break;
+      case 'sabores':
+        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
+        if ($cod) {
+          $produtos = new Produtos();
+          $dados = $produtos->pegarSaboresDosProdutos($cod);
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Código do produto não especificado.'];
+        }
+        break;
       case 'ingredientes':
         $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
         if ($cod) {

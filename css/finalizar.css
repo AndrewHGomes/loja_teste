@@ -1,0 +1,14 @@
+#nav-voltar {
+  background-color: #333;
+  padding: 0.5em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--sombra-embaixo);
+}
+
+#nav-voltar a {
+  text-decoration: none;
+  color: #fff;
+  font-size: 1.1em;
+}

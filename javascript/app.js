@@ -10,6 +10,8 @@ import {
   carregarProdutoSelecionado,
   carregarCarrinho,
   carregarComplementos,
+  carregarSabores,
+  carregarBordas,
 } from "./produtos.js";
 
 import { verificarSessao } from "./verificarSessao.js";
@@ -171,7 +173,11 @@ async function gerenciarCategoriasMercadorias() {
 
           boxDoProduto?.addEventListener("click", async () => {
             const tamanhos = await carregarTamanhos(mercadoria.Codigo);
+            const sabores = await carregarSabores(mercadoria.Codigo);
+            const bordas = await carregarBordas();
             console.log(tamanhos);
+            console.log(sabores);
+            console.log(bordas);
 
             let tamanhoFinal = null;
             let precoFinal = Number(mercadoria.Venda).toFixed(2);
@@ -184,12 +190,12 @@ async function gerenciarCategoriasMercadorias() {
                 .tamanho-button-group input[type="radio"] { display: none; }
                 .tamanho-button-group label {
                     display: inline-block; padding: 8px 15px; margin: 5px;
-                    border: 2px solid #ccc; border-radius: 20px; cursor: pointer;
-                    font-weight: bold; transition: all 0.2s; width: 200px; text-align: center;
+                    border: 1px solid #ccc; border-radius: 20px; cursor: pointer;
+                    font-weight: bold; transition: all 0.1s; width: 200px; text-align: center;
                 }
                 .tamanho-button-group input[type="radio"]:checked + label {
                     background-color: #080; color: white; border-color: #080;
-                    box-shadow: 0 0 5px rgba(0, 128, 0, 0.5);
+                    box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
                 }
             </style>
             <div style="text-align: center; margin-top: 10px;">
@@ -207,7 +213,7 @@ async function gerenciarCategoriasMercadorias() {
                 ).toFixed(2)}|${tamanho.Sabores}|${tamanho.PermiteBorda}" 
                     />
                     <label for="${tamanho.Tamanho}">
-                        ${tamanho.Tamanho} - R$ ${Number(tamanho.Valor).toFixed(
+                        ${tamanho.Tamanho} R$ ${Number(tamanho.Valor).toFixed(
                   2
                 )}
                     </label>
@@ -221,6 +227,7 @@ async function gerenciarCategoriasMercadorias() {
                 title: `SELECIONE O TAMANHO:`,
                 html: htmlSwal,
                 icon: "question",
+                backdrop: "rgba(0,0,0,0.7)",
                 showCancelButton: true,
                 confirmButtonColor: "#080",
                 cancelButtonText: "Cancelar",
@@ -951,6 +958,116 @@ async function gerenciarCarrinho() {
 
 //========================================================================================//
 
+async function gerenciarFinalizacao() {
+  try {
+    const empresa = await carregarEmpresa();
+    const entregaLiberada = empresa.parametros.ativaentrega === "S";
+
+    let htmlSwal = `
+            <style>
+                .entrega-button-group input[type="radio"] { display: none; }
+                .entrega-button-group label {
+                    display: inline-block; padding: 8px 16px; margin: 10px;
+                    border: 1px solid #ccc; border-radius: 25px; cursor: pointer;
+                    font-weight: bold; transition: all 0.1s; width: 200px; text-align: center;
+                }
+                .entrega-button-group input[type="radio"]:checked + label {
+                    background-color: #080; color: white; border-color: #080;
+                    box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
+                }
+                .entrega-button-group .disabled {
+                    opacity: 0.6; 
+                    cursor: not-allowed;
+                }
+            </style>
+            <div style="text-align: center; margin-top: 10px;">
+        `;
+
+    htmlSwal += `
+            <div class="entrega-button-group" style="display: inline-block;">
+                <input type="radio" id="retirada" name="forma-entrega" value="R" />
+                <label for="retirada">
+                    <i class="fas fa-walking"></i> Retirar <br> <small>Sem taxa de entrega</small>
+                </label>
+            </div>
+        `;
+
+    const entregaDisabled = !entregaLiberada ? "disabled" : "";
+    const textoEntrega = entregaLiberada
+      ? "Entregar <br> <small>Taxa será calculada</small>"
+      : "Entrega indisponível";
+
+    htmlSwal += `
+            <div class="entrega-button-group" style="display: inline-block;">
+                <input type="radio" id="entrega" name="forma-entrega" value="E" ${entregaDisabled} />
+                <label for="entrega" class="${entregaDisabled}">
+                    <i class="fas fa-motorcycle"></i> ${textoEntrega}
+                </label>
+            </div>
+        `;
+
+    htmlSwal += `</div>`;
+
+    // 3. Exibir o SweetAlert estilizado
+    const result = await Swal.fire({
+      title: "COMO DESEJA RECEBER?",
+      html: htmlSwal,
+      icon: "question",
+      backdrop: "rgba(0,0,0,0.7)",
+
+      // REMOVIDO: showCancelButton: true,
+      // REMOVIDO: cancelButtonText: "Voltar ao Carrinho",
+
+      confirmButtonText: "Confirmar", // Ajustado para ser mais claro
+      confirmButtonColor: "#080",
+
+      // Força o usuário a clicar em uma opção válida ou fechar o modal.
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      focusConfirm: false,
+
+      preConfirm: () => {
+        const radioSelecionado = document.querySelector(
+          'input[name="forma-entrega"]:checked'
+        );
+
+        if (
+          !radioSelecionado ||
+          (radioSelecionado.value === "E" && !entregaLiberada)
+        ) {
+          Swal.showValidationMessage("Por favor, selecione uma opção válida.");
+          return false;
+        }
+        return radioSelecionado.value;
+      },
+    });
+
+    // Agora, só precisamos verificar se o usuário CONFIRMOU (result.isConfirmed)
+    if (result.isConfirmed) {
+      const formaEntrega = result.value;
+
+      if (formaEntrega === "R") {
+        await configurarParaRetirada(empresa);
+      } else if (formaEntrega === "E") {
+        await configurarParaEntrega(empresa);
+      }
+    }
+    // Se isConfirmed for FALSE, significa que o usuário usou o botão de fechar (X)
+    // ou o modal foi fechado. Como allowOutsideClick: false e allowEscapeKey: false
+    // o usuário é forçado a escolher ou sair manualmente via o botão do HTML.
+  } catch (error) {
+    console.error("Erro na inicialização da finalização:", error);
+    // Em caso de falha crítica na API, ainda redirecionamos
+    Swal.fire("Erro", "Falha ao carregar dados da empresa.", "error").then(
+      () => {
+        window.location.href = "./carrinho.html";
+      }
+    );
+  }
+}
+
+//========================================================================================//
+
 document.addEventListener("DOMContentLoaded", () => {
   verificacaoDaSessao();
   gerenciarInfoEmpresa();
@@ -959,4 +1076,5 @@ document.addEventListener("DOMContentLoaded", () => {
   gerenciarPedidosAnteriores();
   gerenciarProdutoSelecionado();
   gerenciarCarrinho();
+  // gerenciarFinalizacao();
 });

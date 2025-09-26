@@ -23,9 +23,11 @@ class Produtos
   {
     try {
       $sql = "SELECT grupo.Descricao AS Grupo,grupo.FecharCozinha,categorias.descricao
-              AS categoria, categorias.pizza, mercadorias.* FROM mercadorias INNER JOIN grupo ON (mercadorias.idgrupo = grupo.Codigo)
+              AS categoria, categorias.pizza, mercadorias.* FROM mercadorias INNER JOIN grupo
+              ON (mercadorias.idgrupo = grupo.Codigo)
               INNER JOIN categorias ON (grupo.idcategoria = categorias.id)
-              WHERE complemento = 'N' AND mercadorias.ativo = 'S' AND mercadorias.delivery = 'S' ORDER BY categorias.Ordem ASC";
+              WHERE complemento = 'N' AND mercadorias.ativo = 'S' AND mercadorias.ComplementoBorda = 'N'
+              AND mercadorias.delivery = 'S' ORDER BY categorias.Ordem ASC";
 
       $stmt = $this->conexao->prepare($sql);
       $stmt->execute();
@@ -127,6 +129,24 @@ class Produtos
       return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
       error_log("Erro ao buscar tamanhos: " . $e->getMessage());
+      return [];
+    }
+  }
+
+  //===============================================================================
+
+  public function pegarSaboresDosProdutos($codigo)
+  {
+    try {
+      $sql = "SELECT * FROM sabores WHERE idMerc = :codigo";
+
+      $stmt = $this->conexao->prepare($sql);
+      $stmt->bindParam(':codigo', $codigo, PDO::PARAM_INT);
+      $stmt->execute();
+
+      return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+      error_log("Erro ao buscar sabores: " . $e->getMessage());
       return [];
     }
   }

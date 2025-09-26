@@ -31,6 +31,32 @@ export async function carregarTamanhos(codigo) {
   }
 }
 
+export async function carregarSabores(codigo) {
+  if (!codigo) {
+    return [];
+  }
+
+  try {
+    const sabores = await apiGet(`sabores&cod=${codigo}`);
+    return sabores || [];
+  } catch (erro) {
+    return [];
+  }
+}
+
+export async function carregarBordas(codigo) {
+  if (!codigo) {
+    return [];
+  }
+
+  try {
+    const bordas = await apiGet(`bordas`);
+    return bordas || [];
+  } catch (erro) {
+    return [];
+  }
+}
+
 export async function carregarComplementos(produtoPrincipal) {
   if (
     !produtoPrincipal.RequerComplementoCod ||
