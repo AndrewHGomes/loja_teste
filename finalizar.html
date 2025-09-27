@@ -27,7 +27,7 @@
         <h3>Tipo de Entrega</h3>
         <div class="tipo">
           <div id="info-entrega-atual" class="group"></div>
-          <a href="#" onclick="alterarTipoEntrega()">Alterar</a>
+          <button>Alterar</button>
         </div>
 
         <div id="bloco-retirada" style="display: none">
@@ -43,16 +43,16 @@
         <h3>Totais</h3>
         <div class="row">
           <p>Produtos</p>
-          <p id="total-produtos"></p>
+          <p id="total-produtos">Total</p>
         </div>
         <div class="row taxa" id="bloco-taxa">
           <p>Taxa Entrega</p>
-          <p id="total-taxa"></p>
+          <p id="total-taxa">Taxa</p>
         </div>
         <input type="hidden" id="taxatransporte" value="0" />
         <div class="row">
           <b>Total</b>
-          <b id="total-geral"></b>
+          <b id="total-geral">Total</b>
         </div>
 
         <h3>Meus Dados</h3>
@@ -60,9 +60,6 @@
           <legend>Nome</legend>
           <input type="text" id="input-nome" class="nome" required />
         </fieldset>
-        <div class="alert-name">
-          Campo nome deve conter no minimo 2 caracteres
-        </div>
         <fieldset class="fonef">
           <legend>Telefone</legend>
           <input type="text" id="input-fone" class="fone" readonly />
