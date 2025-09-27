@@ -26,7 +26,7 @@
       <section id="checkout-container">
         <h3>Tipo de Entrega</h3>
         <div class="tipo">
-          <div id="info-entrega-atual" class="group"></div>
+          <div id="info-entrega-atual" class="group">Aguardando...</div>
           <button>Alterar</button>
         </div>
 
@@ -65,19 +65,21 @@
           <input type="text" id="input-fone" class="fone" readonly />
         </fieldset>
 
-        <div class="fpagamento">
+        <div id="forma-pagamento">
           <h3>Forma de Pagamento</h3>
 
-          <label class="radio din">
+          <label class="radio dinheiro">
             <input
               type="radio"
               required
-              class="fp"
-              name="fpagamento"
+              class="pagamento-dinheiro"
+              name="forma-pagamento"
               value="D"
               onclick="exibirTroco()"
-            />Dinheiro
+            />
+            <span>Dinheiro</span>
           </label>
+
           <input
             type="number"
             id="input-troco"
@@ -87,15 +89,28 @@
             style="display: none"
           />
 
-          <label class="radio car">
+          <label class="radio cartao">
             <input
               type="radio"
               required
-              class="fpp"
-              name="fpagamento"
+              class="pagamento-cartao"
+              name="forma-pagamento"
               value="C"
               onclick="ocultarTroco()"
-            />Cartão
+            />
+            <span>Cartão</span>
+          </label>
+
+          <label class="radio pix">
+            <input
+              type="radio"
+              required
+              class="pagamento-pix"
+              name="forma-pagamento"
+              value="P"
+              onclick="ocultarTroco()"
+            />
+            <span>Pix</span>
           </label>
 
           <button

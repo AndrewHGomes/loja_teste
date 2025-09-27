@@ -17,7 +17,7 @@
   padding: 0.5em;
   display: flex;
   flex-direction: column;
-  gap: 1em;
+  gap: 0.5em;
 }
 
 #checkout-container .tipo {
@@ -29,6 +29,10 @@
   justify-content: space-between;
   padding: 0.5em;
   box-shadow: var(--sombra-box);
+}
+
+#checkout-container .tipo #info-entrega-atual {
+  text-shadow: var(--sombra-texto);
 }
 
 #checkout-container .tipo button {
@@ -51,9 +55,13 @@
 }
 
 #checkout-container fieldset {
-  padding: 0.5em;
+  padding: 0.3em;
   border: 1px solid #e0e0e0;
   border-radius: 3px;
+}
+
+#checkout-container fieldset:hover {
+  border-color: #080;
 }
 
 #checkout-container fieldset legend {
@@ -65,8 +73,55 @@
 
 #checkout-container fieldset input {
   width: 100%;
-  padding: 0.3em;
   border: none;
   outline: none;
   font-size: 1em;
+}
+
+#checkout-container #forma-pagamento {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+#checkout-container #forma-pagamento .radio {
+  display: block;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+#checkout-container #forma-pagamento .radio input[type="radio"] {
+  display: none;
+}
+
+#checkout-container #forma-pagamento .radio span {
+  display: block;
+  padding: 0.5em;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+#checkout-container #forma-pagamento .radio:hover span {
+  background-color: #cfffc1;
+  border-color: #080;
+}
+
+.radio input[type="radio"]:checked + span {
+  background-color: #cfffc1;
+  border-color: #080;
+  box-shadow: var(--sombra-box);
+}
+
+#checkout-container #forma-pagamento #btn-finalizar {
+  background-color: #080;
+  color: #fff;
+  padding: 0.5em;
+  border: none;
+  font-size: 1em;
+  font-weight: bold;
 }

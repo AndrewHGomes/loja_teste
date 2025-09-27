@@ -173,7 +173,7 @@ footer {
   position: fixed;
   bottom: 0;
   border-top: 1px solid #ccc;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0);
   backdrop-filter: blur(10px);
   box-shadow: var(--sombra-encima);
 }
