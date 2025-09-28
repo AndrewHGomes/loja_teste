@@ -13,7 +13,7 @@ class Produtos
     try {
       $this->conexao = Conexao::instancia();
     } catch (Exception $e) {
-      die("Não foi possível conectar ao banco de dados: " . $e->getMessage());
+      throw new Exception("Erro de conexão com o banco de dados.");
     }
   }
 

@@ -1,3 +1,12 @@
+const AppData = {
+  empresa: null,
+  parametros: null,
+  horarios: null,
+  categorias: null,
+  produtos: null,
+  sessao: null,
+};
+
 import { apiPost } from "./api.js";
 import { carregarEmpresa, carregarHorarios } from "./empresa.js";
 import {
@@ -11,6 +20,7 @@ import {
   carregarComplementos,
   carregarSabores,
   carregarBordas,
+  carregarPedidoFinalizacao,
 } from "./produtos.js";
 import { verificarSessao } from "./verificarSessao.js";
 import { capturar, criarElemento } from "./capturar.js";
@@ -20,32 +30,34 @@ import { capturar, criarElemento } from "./capturar.js";
 async function verificacaoDaSessao() {
   const sessao = await verificarSessao();
   console.log(sessao);
+  return sessao;
 }
 
 //========================================================================================//
 
-async function gerenciarInfoEmpresa() {
+function gerenciarInfoEmpresa(empresa, parametros) {
   try {
-    const empresa = await carregarEmpresa();
+    const dadosEmpresa = empresa;
+    const dadosParametros = parametros;
 
-    if (!empresa.empresa || !empresa.parametros) {
+    if (!dadosEmpresa || !dadosParametros) {
       console.error("Dados da empresa não encontrados ou a requisição falhou.");
       return;
     }
 
     const title = capturar("title");
     if (title) {
-      title.textContent = empresa.empresa.Fantasia;
+      title.textContent = dadosEmpresa.Fantasia;
     }
 
     const tituloEmpresa = capturar("#titulo-empresa");
     if (tituloEmpresa) {
-      tituloEmpresa.textContent = empresa.empresa.Fantasia;
+      tituloEmpresa.textContent = dadosEmpresa.Fantasia;
     }
 
     const cidadeEmpresa = capturar("#cidade-empresa");
     if (cidadeEmpresa) {
-      cidadeEmpresa.textContent = `${empresa.empresa.Cidade} - SP`;
+      cidadeEmpresa.textContent = `${dadosEmpresa.Cidade} - SP`;
     }
 
     const infoStatus = capturar(".status > span", true);
@@ -53,48 +65,48 @@ async function gerenciarInfoEmpresa() {
     if (infoStatus) {
       if (infoStatus[0]) {
         infoStatus[0].textContent =
-          empresa.parametros.aberto === "S" ? "ABERTO" : "FECHADO";
+          dadosParametros.aberto === "S" ? "ABERTO" : "FECHADO";
         infoStatus[0].style.color =
-          empresa.parametros.aberto === "S" ? "#080" : "#c00";
+          dadosParametros.aberto === "S" ? "#080" : "#c00";
 
         infoStatus[0].addEventListener("click", () => {
           Swal.fire({
             text: `ESTAMOS ${
-              empresa.parametros.aberto === "S" ? "ABERTOS" : "FECHADOS"
+              dadosParametros.aberto === "S" ? "ABERTOS" : "FECHADOS"
             }`,
-            icon: empresa.parametros.aberto === "S" ? "success" : "error",
+            icon: dadosParametros.aberto === "S" ? "success" : "error",
             backdrop: "rgba(0,0,0,0.7)",
             confirmButtonColor:
-              empresa.parametros.aberto === "S" ? "#080" : "#c00",
+              dadosParametros.aberto === "S" ? "#080" : "#c00",
           });
         });
       }
 
       if (infoStatus[1]) {
         infoStatus[1].innerHTML =
-          empresa.parametros.ativaentrega === "N"
+          dadosParametros.ativaentrega === "N"
             ? "RETIRAR | <del>ENTREGAR</del>"
             : "RETIRAR | ENTREGAR";
 
         infoStatus[1].addEventListener("click", () => {
           Swal.fire({
             text: `ENTREGA ESTÁ ${
-              empresa.parametros.ativaentrega === "N" ? "DESATIVADA" : "ATIVA"
+              dadosParametros.ativaentrega === "N" ? "DESATIVADA" : "ATIVA"
             }`,
-            icon: empresa.parametros.ativaentrega === "S" ? "success" : "error",
+            icon: dadosParametros.ativaentrega === "S" ? "success" : "error",
             backdrop: "rgba(0,0,0,0.7)",
             confirmButtonColor:
-              empresa.parametros.ativaentrega === "S" ? "#080" : "#c00",
+              dadosParametros.ativaentrega === "S" ? "#080" : "#c00",
           });
         });
       }
 
       if (infoStatus[2]) {
-        infoStatus[2].innerHTML = `<i class="fa-regular fa-clock"></i> ${empresa.parametros.tempoentrega}`;
+        infoStatus[2].innerHTML = `<i class="fa-regular fa-clock"></i> ${dadosParametros.tempoentrega}`;
 
         infoStatus[2].addEventListener("click", () => {
           Swal.fire({
-            text: ` TEMPO DE ENTREGA É DE ${empresa.parametros.tempoentrega}`,
+            text: ` TEMPO DE ENTREGA É DE ${dadosParametros.tempoentrega}`,
             icon: "info",
             backdrop: "rgba(0,0,0,0.7)",
             confirmButtonColor: "#080",
@@ -109,11 +121,8 @@ async function gerenciarInfoEmpresa() {
 
 //========================================================================================//
 
-async function gerenciarCategoriasMercadorias() {
+function gerenciarCategoriasMercadorias(categorias, produtos) {
   try {
-    const produtos = await carregarProdutos();
-    const categorias = await carregarCategorias();
-
     const navCategorias = capturar(".nav-categorias");
     const sectionProdutos = capturar("#produtos");
 
@@ -162,10 +171,10 @@ async function gerenciarCategoriasMercadorias() {
           produtoItem.classList.add("produto-item");
 
           produtoItem.innerHTML = `
-          <span class="descricao">${mercadoria.Descricao}</span>
-          <span class="observacao-produto">${observacaoProduto}</span>
-          <span class="preco">R$ ${preco}</span>
-          `;
+                      <span class="descricao">${mercadoria.Descricao}</span>
+                      <span class="observacao-produto">${observacaoProduto}</span>
+                      <span class="preco">R$ ${preco}</span>
+                      `;
 
           boxDoProduto?.addEventListener("click", async () => {
             const tamanhos = await carregarTamanhos(mercadoria.Codigo);
@@ -182,39 +191,39 @@ async function gerenciarCategoriasMercadorias() {
 
             if (tamanhos && tamanhos.length > 0) {
               let htmlSwal = `
-            <style>
-                .tamanho-button-group input[type="radio"] { display: none; }
-                .tamanho-button-group label {
-                    display: inline-block; padding: 8px 15px; margin: 5px;
-                    border: 1px solid #ccc; border-radius: 20px; cursor: pointer;
-                    font-weight: bold; transition: all 0.1s; width: 200px; text-align: center;
-                }
-                .tamanho-button-group input[type="radio"]:checked + label {
-                    background-color: #080; color: white; border-color: #080;
-                    box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
-                }
-            </style>
-            <div style="text-align: center; margin-top: 10px;">
-        `;
+                                <style>
+                                    .tamanho-button-group input[type="radio"] { display: none; }
+                                    .tamanho-button-group label {
+                                        display: inline-block; padding: 8px 15px; margin: 5px;
+                                        border: 1px solid #ccc; border-radius: 20px; cursor: pointer;
+                                        font-weight: bold; transition: all 0.1s; width: 200px; text-align: center;
+                                    }
+                                    .tamanho-button-group input[type="radio"]:checked + label {
+                                        background-color: #080; color: white; border-color: #080;
+                                        box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
+                                    }
+                                </style>
+                                <div style="text-align: center; margin-top: 10px;">
+                            `;
 
               tamanhos.forEach((tamanho) => {
                 htmlSwal += `
-                <div class="tamanho-button-group" style="display: inline-block;">
-                    <input 
-                        type="radio" 
-                        id="${tamanho.Tamanho}" 
-                        name="tamanho-produto" 
-                        value="${tamanho.Tamanho}|${Number(
+                                    <div class="tamanho-button-group" style="display: inline-block;">
+                                        <input 
+                                            type="radio" 
+                                            id="${tamanho.Tamanho}" 
+                                            name="tamanho-produto" 
+                                            value="${tamanho.Tamanho}|${Number(
                   tamanho.Valor
                 ).toFixed(2)}|${tamanho.Sabores}|${tamanho.PermiteBorda}" 
-                    />
-                    <label for="${tamanho.Tamanho}">
-                        ${tamanho.Tamanho} R$ ${Number(tamanho.Valor).toFixed(
-                  2
-                )}
-                    </label>
-                </div>
-            `;
+                                        />
+                                        <label for="${tamanho.Tamanho}">
+                                            ${tamanho.Tamanho} R$ ${Number(
+                  tamanho.Valor
+                ).toFixed(2)}
+                                        </label>
+                                    </div>
+                                `;
               });
 
               htmlSwal += `</div>`;
@@ -295,29 +304,30 @@ async function gerenciarCategoriasMercadorias() {
 
 //========================================================================================//
 
-async function gerenciarAside() {
+function gerenciarAside(empresa, horarios, parametros) {
   try {
-    const empresa = await carregarEmpresa();
-    const horarios = await carregarHorarios();
+    const dadosEmpresa = empresa;
+    const dadosHorarios = horarios;
+    const dadosParametros = parametros;
 
-    if (!empresa.empresa || !empresa.parametros || !horarios) {
+    if (!dadosEmpresa || !dadosParametros || !dadosHorarios) {
       console.error("Dados de empresa ou horários não encontrados.");
       return;
     }
 
     const h3Aside = capturar("aside h3");
     if (h3Aside) {
-      h3Aside.textContent = `${empresa.empresa.Endereco}, ${empresa.empresa.Numero}`;
+      h3Aside.textContent = `${dadosEmpresa.Endereco}, ${dadosEmpresa.Numero}`;
     }
 
     const h4Aside = capturar("aside h4");
     if (h4Aside) {
-      h4Aside.textContent = `${empresa.empresa.Bairro}`;
+      h4Aside.textContent = `${dadosEmpresa.Bairro}`;
     }
 
     const tdPreparo = capturar(".tabela1 td:nth-of-type(1)");
     if (tdPreparo) {
-      tdPreparo.textContent = empresa.parametros.tempoentrega;
+      tdPreparo.textContent = dadosParametros.tempoentrega;
     }
 
     const tdRetirar = capturar(".tabela1 td:nth-of-type(2)");
@@ -328,61 +338,67 @@ async function gerenciarAside() {
     const tdEntregar = capturar(".tabela1 td:nth-of-type(3)");
     if (tdEntregar) {
       tdEntregar.textContent =
-        empresa.parametros.ativaentrega === "S" ? "SIM" : "NÃO";
+        dadosParametros.ativaentrega === "S" ? "SIM" : "NÃO";
     }
 
     const tabelaHorarios = capturar(".tabela2 tbody");
 
-    if (tabelaHorarios && horarios.length > 0) {
-      const diasDaSemana = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
+    if (tabelaHorarios && dadosHorarios.length > 0) {
+      const mapaDias = {
+        DOM: "Domingo",
+        SEG: "Segunda",
+        TER: "Terça",
+        QUA: "Quarta",
+        QUI: "Quinta",
+        SEX: "Sexta",
+        SAB: "Sábado",
+      };
 
-      horarios.forEach((item, index) => {
+      dadosHorarios.forEach((item) => {
         const tr = document.createElement("tr");
 
         const tdDia = document.createElement("td");
         if (tdDia) {
-          tdDia.textContent = diasDaSemana[index];
+          tdDia.textContent = mapaDias[item.dia] || item.dia;
           tr.appendChild(tdDia);
         }
 
         const tdAbertura = document.createElement("td");
         if (tdAbertura) {
-          tdAbertura.textContent = item.abertura;
+          tdAbertura.textContent = item.abertura.substring(0, 5);
           tr.appendChild(tdAbertura);
         }
 
         const tdFechamento = document.createElement("td");
         if (tdFechamento) {
-          tdFechamento.textContent = item.fechamento;
+          tdFechamento.textContent = item.fechamento.substring(0, 5);
           tr.appendChild(tdFechamento);
         }
 
-        if (tabelaHorarios) {
-          tabelaHorarios.appendChild(tr);
-        }
+        tabelaHorarios.appendChild(tr);
       });
     }
 
     const abertoFechado = capturar(".fechado-aberto");
     if (abertoFechado) {
       abertoFechado.innerHTML =
-        empresa.parametros.aberto === "S"
+        dadosParametros.aberto === "S"
           ? "<i class='fa-solid fa-door-open'></i> ESTAMOS [ ABERTOS ]"
           : "<i class='fa-solid fa-door-closed'></i> ESTAMOS [ FECHADOS ]";
 
       abertoFechado.style.color =
-        empresa.parametros.aberto === "S" ? "#080" : "#c00";
+        dadosParametros.aberto === "S" ? "#080" : "#c00";
     }
 
     const contatoEmpresa = capturar(".contato-empresa");
     if (contatoEmpresa) {
       contatoEmpresa.textContent =
-        empresa.empresa.Telefone != null
-          ? `ENTRE EM CONTATO ${empresa.empresa.Telefone}`
+        dadosEmpresa.Telefone != null
+          ? `ENTRE EM CONTATO ${dadosEmpresa.Telefone}`
           : "";
 
       contatoEmpresa.style.display =
-        empresa.empresa.Telefone != null ? "block" : "none";
+        dadosEmpresa.Telefone != null ? "block" : "none";
     }
 
     const logoEmpresa = capturar("#logo-empresa");
@@ -407,10 +423,13 @@ async function gerenciarAside() {
 
 //========================================================================================//
 
-async function gerenciarPedidosAnteriores() {
+async function gerenciarPedidosAnteriores(foneDoUsuario) {
   try {
-    const sessao = await verificarSessao();
-    const foneDoUsuario = sessao.usuario.telefone;
+    if (!foneDoUsuario) {
+      console.log("Usuário não logado. Não irá carregar pedidos anteriores.");
+      return;
+    }
+
     const pedidosAnteriores = await carregarPedidosAnteriores(foneDoUsuario);
 
     const footer = capturar("footer");
@@ -962,12 +981,35 @@ async function gerenciarCarrinho() {
       }
     });
 
-    btnConfirmar?.addEventListener("click", () => {
-      console.log(subtotalCarrinho.toFixed(2));
-      console.log(carrinho);
+    btnConfirmar?.addEventListener("click", async () => {
+      const dadosPedido = {
+        carrinho: carrinho,
+        subtotal: subtotalCarrinho.toFixed(2),
+      };
+
+      try {
+        const respostaApi = await apiPost("salvar-pedido-sessao", dadosPedido);
+
+        if (respostaApi.sucesso) {
+          window.location.href = "./finalizar.html";
+        } else {
+          Swal.fire(
+            "Erro",
+            respostaApi.message ||
+              "Falha ao preparar o pedido. Tente novamente.",
+            "error"
+          );
+        }
+      } catch (erro) {
+        Swal.fire(
+          "Erro",
+          erro.message || "Erro de comunicação com o servidor.",
+          "error"
+        );
+      }
     });
   } catch (error) {
-    console.error("Falha ao gerenciar o carrinho:", error); // Exibe uma mensagem de erro ou redireciona.
+    console.error("Falha ao gerenciar o carrinho:", error);
   }
 }
 
@@ -976,12 +1018,52 @@ async function gerenciarCarrinho() {
 async function gerenciarFinalizacao() {
   try {
     let formaEntrega = null;
+    let carrinho, subtotal;
 
-    const empresa = await carregarEmpresa();
-    console.log(empresa);
+    const dadosPedido = await carregarPedidoFinalizacao();
+
+    if (
+      !dadosPedido ||
+      !Array.isArray(dadosPedido.carrinho) ||
+      dadosPedido.carrinho.length === 0
+    ) {
+      Swal.fire(
+        "Ops!",
+        "Seu carrinho está vazio ou expirou. Por favor, volte ao carrinho.",
+        "warning"
+      ).then(() => {
+        window.location.href = "./carrinho.html";
+      });
+      return;
+    }
+
+    carrinho = dadosPedido.carrinho;
+    subtotal = dadosPedido.subtotal;
+
+    console.log(carrinho, subtotal);
+
+    let dadosEmpresaObj = {};
+    if (
+      window.AppData &&
+      window.AppData.empresa &&
+      Object.keys(window.AppData.empresa).length > 0
+    ) {
+      dadosEmpresaObj = {
+        empresa: AppData.empresa,
+        parametros: AppData.parametros,
+      };
+    } else {
+      dadosEmpresaObj = await carregarEmpresa();
+    }
+
+    const empresa = dadosEmpresaObj;
+
+    const title = capturar("title");
+    title.textContent = empresa.empresa.Fantasia;
+
     const entregaLiberada = empresa.parametros.ativaentrega === "S";
-
     const entregaDisabled = !entregaLiberada ? "disabled" : "";
+
     const textoEntrega = entregaLiberada
       ? "Entregar <br> <small>Taxa será calculada</small>"
       : "Entrega indisponível";
@@ -1046,54 +1128,108 @@ async function gerenciarFinalizacao() {
     }
 
     const btnAlterarTipo = capturar(".tipo button");
-    btnAlterarTipo.addEventListener("click", () => window.location.reload());
+    btnAlterarTipo.addEventListener("click", () => gerenciarFinalizacao());
 
     if (formaEntrega) {
       const divTipoEntrega = capturar(".tipo #info-entrega-atual");
+      const blocoTaxa = capturar("#bloco-taxa");
+      const blocoRetirada = capturar("#bloco-retirada");
 
       if (formaEntrega === "E") {
         divTipoEntrega.innerHTML = `
-        <i class="fas fa-motorcycle"></i> Entregar
-        `;
+                <i class="fas fa-motorcycle"></i> Entregar
+                `;
 
-        const blocoTaxa = capturar("#bloco-taxa");
-        blocoTaxa.style.display = "flex";
+        if (blocoTaxa) {
+          blocoTaxa.style.display = "flex";
+        }
+
+        if (blocoRetirada) {
+          blocoRetirada.style.display = "none";
+        }
       } else {
         divTipoEntrega.innerHTML = `
-        <i class="fas fa-walking"></i> Retirar
-        `;
+                <i class="fas fa-walking"></i> Retirar
+                `;
 
-        const blocoRetirada = capturar("#bloco-retirada");
-        blocoRetirada.style.display = "block";
+        if (blocoTaxa) {
+          blocoTaxa.style.display = "none";
+        }
+
+        if (blocoRetirada) {
+          blocoRetirada.style.display = "block";
+        }
 
         const enderecoLoja = capturar("#endereco-loja");
-        enderecoLoja.textContent = `${empresa.empresa.Endereco}, ${empresa.empresa.Numero} - ${empresa.empresa.Bairro}`;
-
         const cidadeLoja = capturar("#cidade-loja");
-        cidadeLoja.textContent = `${empresa.empresa.Cidade}`;
+
+        if (enderecoLoja) {
+          enderecoLoja.textContent = `${empresa.empresa.Endereco}, ${empresa.empresa.Numero} - ${empresa.empresa.Bairro}`;
+        }
+
+        if (cidadeLoja) {
+          cidadeLoja.textContent = `${empresa.empresa.Cidade}`;
+        }
       }
     }
   } catch (error) {
     console.error("Erro na inicialização da finalização:", error);
 
-    Swal.fire("Erro", "Falha ao carregar dados da empresa.", "error").then(
-      () => {
-        window.location.href = "./carrinho.html";
-      }
-    );
+    Swal.fire(
+      "Erro",
+      "Falha ao carregar dados essenciais para o pedido. Você será redirecionado.",
+      "error"
+    ).then(() => {
+      window.location.href = "./carrinho.html";
+    });
   }
 }
 
 //========================================================================================//
 
-document.addEventListener("DOMContentLoaded", () => {
-  verificacaoDaSessao();
+async function carregarDadosIniciais() {
+  try {
+    const [empresaData, horarios, categorias, produtos] = await Promise.all([
+      carregarEmpresa(),
+      carregarHorarios(),
+      carregarCategorias(),
+      carregarProdutos(),
+    ]);
+
+    AppData.empresa = empresaData?.empresa || {};
+    AppData.parametros = empresaData?.parametros || {};
+    AppData.horarios = horarios || [];
+    AppData.categorias = categorias || [];
+    AppData.produtos = produtos || [];
+  } catch (error) {
+    console.error(
+      "ERRO GRAVE: Falha ao carregar dados estáticos iniciais. O servidor pode estar fora do ar.",
+      error
+    );
+
+    AppData.empresa = {};
+    AppData.parametros = {};
+    AppData.horarios = [];
+    AppData.categorias = [];
+    AppData.produtos = [];
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  AppData.sessao = await verificacaoDaSessao();
 
   if (window.location.pathname.endsWith("/index.html")) {
-    gerenciarInfoEmpresa();
-    gerenciarCategoriasMercadorias();
-    gerenciarAside();
-    gerenciarPedidosAnteriores();
+    await carregarDadosIniciais();
+
+    const foneDoUsuario = AppData.sessao.usuario
+      ? AppData.sessao.usuario.telefone
+      : null;
+
+    gerenciarInfoEmpresa(AppData.empresa, AppData.parametros);
+    gerenciarCategoriasMercadorias(AppData.categorias, AppData.produtos);
+    gerenciarAside(AppData.empresa, AppData.horarios, AppData.parametros);
+
+    gerenciarPedidosAnteriores(foneDoUsuario);
   }
 
   if (window.location.pathname.endsWith("/selecionar.html")) {

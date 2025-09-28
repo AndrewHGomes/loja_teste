@@ -120,3 +120,13 @@ export async function carregarCarrinho() {
     return [];
   }
 }
+
+export async function carregarPedidoFinalizacao() {
+  try {
+    const dadosPedido = await apiGet("pegar-pedido-finalizacao");
+
+    return dadosPedido;
+  } catch (erro) {
+    return null;
+  }
+}

@@ -1,2 +1,2 @@
-casa: http://localhost/loja_teste/validate.html?tel=ÔÔØÐÐÐÖ×ÙÒØØÕ
-trabalho: http://localhost/delivery/loja_teste/validate.html?tel=ÔÔØÐÐÐÖ×ÙÒØØÕ
+casa: http://192.168.0.15/loja_teste/validate.html?tel=ÔÔØÐÐÐÖ×ÙÒØØÕ
+trabalho: http://192.168.1.125/delivery/loja_teste/validate.html?tel=ÔÔØÐÐÐÖ×ÙÒØØÕ

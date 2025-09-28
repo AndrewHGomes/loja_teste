@@ -13,7 +13,7 @@ class Empresa
     try {
       $this->conexao = Conexao::instancia();
     } catch (Exception $e) {
-      die("Não foi possível conectar ao banco de dados: " . $e->getMessage());
+      throw new Exception("Erro de conexão com o banco de dados.");
     }
   }
 
@@ -23,18 +23,22 @@ class Empresa
   {
     try {
       $sqlEmpresa = "SELECT * FROM empresa";
-
       $stmtEmpresa = $this->conexao->prepare($sqlEmpresa);
       $stmtEmpresa->execute();
 
-      $dadosEmpresa = $stmtEmpresa->fetchAll(PDO::FETCH_ASSOC);
+      $dadosEmpresa = $stmtEmpresa->fetch(PDO::FETCH_ASSOC);
+      if (!$dadosEmpresa) {
+        $dadosEmpresa = [];
+      }
 
-      $sqlParametros = "SELECT * FROM parametros";
-
+      $sqlParametros = "SELECT * FROM parametros WHERE id = 1";
       $stmtParametros = $this->conexao->prepare($sqlParametros);
       $stmtParametros->execute();
 
-      $dadosParametros = $stmtParametros->fetchAll(PDO::FETCH_ASSOC);
+      $dadosParametros = $stmtParametros->fetch(PDO::FETCH_ASSOC);
+      if (!$dadosParametros) {
+        $dadosParametros = [];
+      }
 
       $dadosCompletos = [
         'empresa' => $dadosEmpresa,

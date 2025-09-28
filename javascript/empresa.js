@@ -5,23 +5,15 @@ export async function carregarEmpresa() {
     const resposta = await apiGet("empresa");
 
     if (resposta && resposta.empresa && resposta.parametros) {
-      return {
-        empresa: resposta.empresa[0],
-        parametros: resposta.parametros[0],
-      };
+      return resposta;
     }
 
-    return { empresa: null, parametros: null };
+    return { empresa: {}, parametros: {} };
   } catch (erro) {
-    return { empresa: null, parametros: null };
+    throw erro;
   }
 }
 
 export async function carregarHorarios() {
-  try {
-    const arrayHorarios = await apiGet("horarios");
-    return arrayHorarios || [];
-  } catch (erro) {
-    return [];
-  }
+  return await apiGet("horarios");
 }

@@ -1,6 +1,7 @@
 #nav-voltar {
   background-color: #333;
   padding: 0.5em;
+  box-shadow: var(--sombra-embaixo);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -17,6 +18,7 @@
 }
 
 header {
+  background-color: #e0e0e0;
   height: 8em;
   overflow: hidden;
   display: flex;
@@ -29,6 +31,12 @@ header img {
   border-radius: 2px;
   width: 30%;
   box-shadow: var(--sombra-box);
+}
+
+header .fa-handshake {
+  font-size: 1.5em;
+  color: #080;
+  text-shadow: var(--sombra-texto);
 }
 
 #produto-box-carrinho {

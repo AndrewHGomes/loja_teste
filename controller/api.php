@@ -128,6 +128,13 @@ try {
           'carrinho' => isset($_SESSION['carrinho']) ? $_SESSION['carrinho'] : [],
         ];
         break;
+      case 'pegar-pedido-finalizacao':
+        $dados = isset($_SESSION['pedido_finalizacao']) ? $_SESSION['pedido_finalizacao'] : null;
+        if (!$dados) {
+          $response_code = 404;
+          $dados = ['message' => 'Nenhum pedido encontrado na sessão.'];
+        }
+        break;
       default:
         $response_code = 400;
         $dados = ['message' => 'Recurso GET não especificado.'];
@@ -174,6 +181,20 @@ try {
         } else {
           $response_code = 400;
           $dados = ['message' => 'Índice do produto não especificado.'];
+        }
+        break;
+      case 'salvar-pedido-sessao':
+        $json_payload = file_get_contents('php://input');
+        $payload = json_decode($json_payload, true);
+        if (isset($payload['carrinho']) && isset($payload['subtotal'])) {
+          $_SESSION['pedido_finalizacao'] = [
+            'carrinho' => $payload['carrinho'],
+            'subtotal' => $payload['subtotal']
+          ];
+          $dados = ['message' => 'Pedido salvo na sessão para finalização.', 'sucesso' => true];
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Dados de carrinho ou subtotal ausentes.', 'sucesso' => false];
         }
         break;
       default:
