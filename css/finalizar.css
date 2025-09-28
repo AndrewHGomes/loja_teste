@@ -17,7 +17,7 @@
   padding: 0.5em;
   display: flex;
   flex-direction: column;
-  gap: 0.5em;
+  gap: 0.7em;
 }
 
 #checkout-container .tipo {
@@ -44,6 +44,22 @@
   border-radius: 50px;
   font-weight: bold;
   font-size: 1em;
+}
+
+#checkout-container .endereco-retirada {
+  border: 1px solid #e0e0e0;
+  padding: 0.5em;
+  margin-top: 0.5em;
+}
+
+#checkout-container .endereco-retirada #endereco-loja {
+  color: #080;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+#checkout-container .endereco-retirada #cidade-loja {
+  font-size: 0.8em;
 }
 
 #checkout-container .row {
@@ -117,7 +133,7 @@
   box-shadow: var(--sombra-box);
 }
 
-#checkout-container #forma-pagamento #btn-finalizar {
+#checkout-container #btn-finalizar {
   background-color: #080;
   color: #fff;
   padding: 0.5em;

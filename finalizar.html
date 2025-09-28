@@ -32,7 +32,7 @@
 
         <div id="bloco-retirada" style="display: none">
           <h3 class="retiretext">Retire seu Pedido Aqui</h3>
-          <div class="retiraendereco">
+          <div class="endereco-retirada">
             <p class="title" id="endereco-loja"></p>
             <span id="cidade-loja"></span>
           </div>
@@ -45,11 +45,10 @@
           <p>Produtos</p>
           <p id="total-produtos">Total</p>
         </div>
-        <div class="row taxa" id="bloco-taxa">
+        <div class="row taxa" id="bloco-taxa" style="display: none">
           <p>Taxa Entrega</p>
           <p id="total-taxa">Taxa</p>
         </div>
-        <input type="hidden" id="taxatransporte" value="0" />
         <div class="row">
           <b>Total</b>
           <b id="total-geral">Total</b>
@@ -65,7 +64,7 @@
           <input type="text" id="input-fone" class="fone" readonly />
         </fieldset>
 
-        <div id="forma-pagamento">
+        <div id="forma-pagamento" style="display: none">
           <h3>Forma de Pagamento</h3>
 
           <label class="radio dinheiro">
@@ -112,15 +111,8 @@
             />
             <span>Pix</span>
           </label>
-
-          <button
-            id="btn-finalizar"
-            class="confirm"
-            onclick="finalizarPedidoCompleto()"
-          >
-            Finalizar
-          </button>
         </div>
+        <button id="btn-finalizar" class="confirm">Finalizar</button>
       </section>
     </main>
   </body>

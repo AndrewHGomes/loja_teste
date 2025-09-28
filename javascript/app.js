@@ -1,5 +1,4 @@
 import { apiPost } from "./api.js";
-
 import { carregarEmpresa, carregarHorarios } from "./empresa.js";
 import {
   carregarProdutos,
@@ -13,9 +12,7 @@ import {
   carregarSabores,
   carregarBordas,
 } from "./produtos.js";
-
 import { verificarSessao } from "./verificarSessao.js";
-
 import { capturar, criarElemento } from "./capturar.js";
 
 //========================================================================================//
@@ -565,6 +562,13 @@ async function mostrarDetalhesPedidosAnteriores(codigo) {
 async function gerenciarProdutoSelecionado() {
   try {
     const produtoSelecionado = await carregarProdutoSelecionado();
+    const empresa = await carregarEmpresa();
+
+    const title = capturar("title");
+
+    if (empresa) {
+      title.textContent = empresa.empresa.Fantasia;
+    }
 
     const imgProdutoHeader = capturar("header img");
     const iconeLupa = capturar(".fa-magnifying-glass-plus");
@@ -702,24 +706,19 @@ async function gerenciarProdutoSelecionado() {
 
         const custoTotalComplementos = complementosSelecionados.reduce(
           (total, comp) => {
-            return total + Number(comp.totalComplemento);
+            return total + comp.totalComplemento;
           },
           0
         );
 
-        const precoUnitarioComComplementos =
-          precoUnitarioPrincipal + custoTotalComplementos;
-        const precoTotalDoItem = (
-          precoUnitarioComComplementos * quantidadePrincipal
-        ).toFixed(2);
-
         const montandoCarrinho = {
           ...produtoSelecionado,
 
-          preco: precoTotalDoItem,
+          preco: precoUnitarioPrincipal.toFixed(2),
           quantidade: quantidadePrincipal,
           observacaoCliente: observacaoCliente,
           complementos: complementosSelecionados,
+          custoComplementos: custoTotalComplementos.toFixed(2),
         };
 
         try {
@@ -753,7 +752,6 @@ async function gerenciarProdutoSelecionado() {
 
 function obterComplementosSelecionados() {
   const complementos = [];
-
   const divsComplemento = capturar(".div-complemento", true);
 
   if (!divsComplemento) {
@@ -777,9 +775,9 @@ function obterComplementosSelecionados() {
 
       complementos.push({
         Descricao: descricaoElement.textContent.trim(),
-        Venda: valorUnitario.toFixed(2),
+        Venda: valorUnitario,
         quantidade: qtd,
-        totalComplemento: (valorUnitario * qtd).toFixed(2),
+        totalComplemento: valorUnitario * qtd,
       });
     }
   });
@@ -791,10 +789,17 @@ function obterComplementosSelecionados() {
 
 async function gerenciarCarrinho() {
   try {
+    const empresa = await carregarEmpresa();
     const carrinho = await carregarCarrinho();
     const iconeLixeira = capturar("#nav-voltar .fa-trash");
     const sectionProdutoBox = capturar("#produto-box-carrinho");
     const btnConfirmar = capturar(".btn-confirmar");
+    let subtotalCarrinho = 0;
+
+    const title = capturar("title");
+    if (title) {
+      title.textContent = empresa.empresa.Fantasia;
+    }
 
     function renderizarProdutos(produtos) {
       if (!sectionProdutoBox) {
@@ -811,11 +816,18 @@ async function gerenciarCarrinho() {
           const divCabecalhoProduto = criarElemento("div");
           divCabecalhoProduto.classList.add("produto-cabecalho");
 
-          const precoTotalItem = Number(produto.preco).toFixed(2);
+          const precoPrincipal = Number(produto.preco);
+          const custoComp = Number(produto.custoComplementos || 0);
+          const precoUnitarioComTudo = precoPrincipal + custoComp;
+          const precoTotalDoItem = precoUnitarioComTudo * produto.quantidade;
+          subtotalCarrinho += precoTotalDoItem;
+          const precoTotalPrincipal = (
+            precoPrincipal * produto.quantidade
+          ).toFixed(2);
 
           divCabecalhoProduto.innerHTML = `
-              <span>${produto.quantidade}x ${produto.descricao}</span>
-              <span>R$ ${precoTotalItem}<i class="fa-solid fa-ellipsis-vertical"></i></span>
+            <span>${produto.quantidade}x ${produto.descricao}</span>
+            <span>R$ ${precoTotalPrincipal}<i class="fa-solid fa-ellipsis-vertical"></i></span>
           `;
 
           divCadaProduto.appendChild(divCabecalhoProduto);
@@ -826,20 +838,17 @@ async function gerenciarCarrinho() {
             produto.complementos.length > 0
           ) {
             const divComplementosContainer = criarElemento("div");
-
             divComplementosContainer.classList.add("complementos-container");
 
             produto.complementos.forEach((comp) => {
               const divComplementoItem = criarElemento("div");
               divComplementoItem.classList.add("complemento-item");
 
-              const precoComplementoTotal = Number(
-                comp.totalComplemento
-              ).toFixed(2);
+              const precoUnitarioComplemento = Number(comp.Venda).toFixed(2);
 
               divComplementoItem.innerHTML = `
-                  <span class="comp-desc">${comp.quantidade}x ${comp.Descricao}</span>
-                  <span class="comp-preco">R$ ${precoComplementoTotal}</span>
+                <span class="comp-desc">${comp.quantidade}x ${comp.Descricao}</span>
+                <span class="comp-preco">R$ ${precoUnitarioComplemento}</span>
               `;
 
               divComplementosContainer.appendChild(divComplementoItem);
@@ -904,6 +913,13 @@ async function gerenciarCarrinho() {
             });
           }
         });
+
+        const subtotalFormatado = subtotalCarrinho.toFixed(2);
+
+        if (btnConfirmar) {
+          const spans = capturar("#section-botoes button span", true);
+          spans[1].textContent = `R$ ${subtotalFormatado}`;
+        }
       } else {
         sectionProdutoBox.innerHTML =
           "<p class='carrinho-vazio'>O carrinho está vazio.</p>";
@@ -947,11 +963,11 @@ async function gerenciarCarrinho() {
     });
 
     btnConfirmar?.addEventListener("click", () => {
-      // Lógica de finalização do pedido.
+      console.log(subtotalCarrinho.toFixed(2));
+      console.log(carrinho);
     });
   } catch (error) {
-    console.error("Falha ao gerenciar o carrinho:", error);
-    // Exibe uma mensagem de erro ou redireciona.
+    console.error("Falha ao gerenciar o carrinho:", error); // Exibe uma mensagem de erro ou redireciona.
   }
 }
 
@@ -962,6 +978,7 @@ async function gerenciarFinalizacao() {
     let formaEntrega = null;
 
     const empresa = await carregarEmpresa();
+    console.log(empresa);
     const entregaLiberada = empresa.parametros.ativaentrega === "S";
 
     const entregaDisabled = !entregaLiberada ? "disabled" : "";
@@ -1038,10 +1055,22 @@ async function gerenciarFinalizacao() {
         divTipoEntrega.innerHTML = `
         <i class="fas fa-motorcycle"></i> Entregar
         `;
+
+        const blocoTaxa = capturar("#bloco-taxa");
+        blocoTaxa.style.display = "flex";
       } else {
         divTipoEntrega.innerHTML = `
         <i class="fas fa-walking"></i> Retirar
         `;
+
+        const blocoRetirada = capturar("#bloco-retirada");
+        blocoRetirada.style.display = "block";
+
+        const enderecoLoja = capturar("#endereco-loja");
+        enderecoLoja.textContent = `${empresa.empresa.Endereco}, ${empresa.empresa.Numero} - ${empresa.empresa.Bairro}`;
+
+        const cidadeLoja = capturar("#cidade-loja");
+        cidadeLoja.textContent = `${empresa.empresa.Cidade}`;
       }
     }
   } catch (error) {
@@ -1059,12 +1088,22 @@ async function gerenciarFinalizacao() {
 
 document.addEventListener("DOMContentLoaded", () => {
   verificacaoDaSessao();
-  gerenciarInfoEmpresa();
-  gerenciarCategoriasMercadorias();
-  gerenciarAside();
-  gerenciarPedidosAnteriores();
-  gerenciarProdutoSelecionado();
-  gerenciarCarrinho();
+
+  if (window.location.pathname.endsWith("/index.html")) {
+    gerenciarInfoEmpresa();
+    gerenciarCategoriasMercadorias();
+    gerenciarAside();
+    gerenciarPedidosAnteriores();
+  }
+
+  if (window.location.pathname.endsWith("/selecionar.html")) {
+    gerenciarProdutoSelecionado();
+  }
+
+  if (window.location.pathname.endsWith("/carrinho.html")) {
+    gerenciarCarrinho();
+  }
+
   if (window.location.pathname.endsWith("/finalizar.html")) {
     gerenciarFinalizacao();
   }
