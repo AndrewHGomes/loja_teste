@@ -204,7 +204,7 @@ function gerenciarCategoriasMercadorias(categorias, produtos) {
                                     }
                                 </style>
                                 <div style="text-align: center; margin-top: 10px;">
-                            `;
+                              `;
 
               tamanhos.forEach((tamanho) => {
                 htmlSwal += `
@@ -732,13 +732,16 @@ async function gerenciarProdutoSelecionado() {
 
         const montandoCarrinho = {
           ...produtoSelecionado,
-
           preco: precoUnitarioPrincipal.toFixed(2),
           quantidade: quantidadePrincipal,
           observacaoCliente: observacaoCliente,
           complementos: complementosSelecionados,
           custoComplementos: custoTotalComplementos.toFixed(2),
         };
+
+        if (produtoSelecionado.editarIndex !== undefined) {
+          montandoCarrinho.editarIndex = produtoSelecionado.editarIndex;
+        }
 
         try {
           const resposta = await apiPost(
@@ -881,53 +884,55 @@ async function gerenciarCarrinho() {
           const elipse = divCabecalhoProduto.querySelector(
             ".fa-ellipsis-vertical"
           );
+
           if (elipse) {
             elipse.addEventListener("click", async () => {
-              const resultadoLimparItem = await Swal.fire({
-                title: "Excluir este item?",
-                text: "Você não poderá reverter esta ação depois!",
+              const resultado = await Swal.fire({
+                title: "O que deseja fazer?",
                 icon: "question",
-                backdrop: "rgba(0,0,0,0.7)",
+                showDenyButton: true,
                 showCancelButton: true,
-                confirmButtonText: "Sim, excluir",
+                confirmButtonText: "Editar",
+                denyButtonText: "Excluir",
+                cancelButtonText: "Cancelar",
                 confirmButtonColor: "#080",
-                cancelButtonText: "Não, cancelar",
-                cancelButtonColor: "#c00",
+                denyButtonColor: "#c00",
+                cancelButtonColor: "#aaa",
+                backdrop: "rgba(0,0,0,0.7)",
               });
 
-              if (resultadoLimparItem.isConfirmed) {
+              if (resultado.isConfirmed) {
                 try {
-                  const respostaApi = await apiPost("remover-item-carrinho", {
-                    index: index,
+                  await apiPost("selecionar-produto", {
+                    ...produtos[index],
+                    editarIndex: index,
                   });
-                  if (respostaApi.message) {
-                    Swal.fire(
-                      "Item Removido!",
-                      respostaApi.message,
-                      "success"
-                    ).then(() => {
-                      renderizarProdutos(
-                        produtos.filter((_, i) => i !== index)
-                      );
-
-                      if (produtos.length === 1) {
-                        setTimeout(() => {
-                          window.location.href = "./index.html";
-                        }, 500);
-                      }
-                    });
-                  } else {
-                    Swal.fire("Erro", "Índice do produto inválido.", "error");
-                  }
+                  window.location.href = "selecionar.html";
                 } catch (erro) {
-                  Swal.fire("Erro", erro.message, "error");
+                  Swal.fire("Erro", "Não foi possível editar o item.", "error");
                 }
-              } else if (resultadoLimparItem.isDismissed) {
-                Swal.fire(
-                  "Ação cancelada",
-                  "O item não foi alterado.",
-                  "error"
-                );
+              } else if (resultado.isDenied) {
+                const respostaApi = await apiPost("remover-item-carrinho", {
+                  index: index,
+                });
+                if (respostaApi.message) {
+                  Swal.fire(
+                    "Item Removido!",
+                    respostaApi.message,
+                    "success"
+                  ).then(() => {
+                    renderizarProdutos(produtos.filter((_, i) => i !== index));
+                    if (produtos.length === 1) {
+                      setTimeout(() => {
+                        window.location.href = "./index.html";
+                      }, 500);
+                    }
+                  });
+                } else {
+                  Swal.fire("Erro", "Índice do produto inválido.", "error");
+                }
+              } else if (resultado.isDismissed) {
+                Swal.fire("Ação cancelada", "O item não foi alterado.", "info");
               }
             });
           }

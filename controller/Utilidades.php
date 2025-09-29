@@ -103,4 +103,25 @@ class Utilidades
       return null;
     }
   }
+
+
+  public function pegarTaxaPorBairro($bairroSelecionado, $taxaFixaEmpresa)
+  {
+    try {
+      $sql = "SELECT taxa FROM bairros WHERE nome = :bairro LIMIT 1";
+      $stmt = $this->conexao->prepare($sql);
+      $stmt->bindParam(':bairro', $bairroSelecionado, PDO::PARAM_STR);
+      $stmt->execute();
+      $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      if ($result && isset($result['taxa']) && floatval($result['taxa']) > 0) {
+        return floatval($result['taxa']);
+      } else {
+        return floatval($taxaFixaEmpresa);
+      }
+    } catch (PDOException $e) {
+      error_log("Erro ao verificar taxa do bairro: " . $e->getMessage());
+      return floatval($taxaFixaEmpresa);
+    }
+  }
 }

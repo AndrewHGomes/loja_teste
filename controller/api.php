@@ -6,6 +6,7 @@ require_once 'session_init.php';
 require_once 'Conexao.php';
 require_once 'Empresa.php';
 require_once 'Produtos.php';
+require_once 'Utilidades.php';
 
 try {
   $metodo = $_SERVER['REQUEST_METHOD'];
@@ -125,6 +126,21 @@ try {
           $dados = ['message' => 'Nenhum pedido encontrado na sessão.'];
         }
         break;
+      case 'taxa-entrega':
+        $json_payload = file_get_contents('php://input');
+        $payload = json_decode($json_payload, true);
+        if (isset($payload['bairro']) && !empty($payload['bairro'])) {
+          $util = new Utilidades();
+          $empresa = new Empresa();
+          $parametros = $empresa->pegarDadosDaEmpresa();
+          $taxaFixa = isset($parametros['taxaentrega']) ? $parametros['taxaentrega'] : 0;
+          $taxa = $util->pegarTaxaPorBairro($payload['bairro'], $taxaFixa);
+          $dados = ['taxa' => $taxa];
+        } else {
+          $response_code = 400;
+          $dados = ['message' => 'Bairro não informado.'];
+        }
+        break;
       default:
         $response_code = 400;
         $dados = ['message' => 'Recurso GET não especificado.'];
@@ -145,9 +161,19 @@ try {
       case 'adicionar-ao-carrinho':
         $json_payload = file_get_contents('php://input');
         $payload = json_decode($json_payload, true);
+
         if (isset($payload) && !empty($payload)) {
-          $_SESSION['carrinho'][] = $payload;
-          $dados = ['message' => 'Produto adicionado ao carrinho.'];
+          if (!isset($_SESSION['carrinho']) || !is_array($_SESSION['carrinho'])) {
+            $_SESSION['carrinho'] = [];
+          }
+          if (isset($payload['editarIndex'])) {
+            $_SESSION['carrinho'][$payload['editarIndex']] = $payload;
+            unset($_SESSION['carrinho'][$payload['editarIndex']]['editarIndex']);
+            $dados = ['message' => 'Item editado com sucesso.'];
+          } else {
+            $_SESSION['carrinho'][] = $payload;
+            $dados = ['message' => 'Produto adicionado ao carrinho.'];
+          }
         } else {
           $response_code = 400;
           $dados = ['message' => 'Dados do produto inválidos para o carrinho.'];
