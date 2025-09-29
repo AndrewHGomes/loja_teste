@@ -3,13 +3,9 @@ import { apiGet } from "./api.js";
 export async function verificarSessao() {
   try {
     const sessao = await apiGet("dados-sessao");
-
-    if (sessao && sessao.usuario && sessao.carrinho) {
-      return sessao;
-    }
-
-    return { usuario: null, carrinho: [] };
+    return sessao;
   } catch (erro) {
-    return { usuario: null, carrinho: [] };
+    console.error("Erro ao buscar dados da sessão:", erro);
+    return {};
   }
 }

@@ -962,7 +962,7 @@ async function gerenciarCarrinho() {
 
       if (resultadoLimparCarrinho.isConfirmed) {
         try {
-          const respostaApi = await apiPost("limpar-carrinho");
+          const respostaApi = await apiPost("limpar-pedido");
           if (respostaApi.message) {
             Swal.fire("Carrinho Limpo!", respostaApi.message, "success").then(
               () => {
@@ -1015,12 +1015,14 @@ async function gerenciarCarrinho() {
 
 //========================================================================================//
 
-async function gerenciarFinalizacao() {
+async function gerenciarFinalizacao(sessaoCarregada) {
   try {
     let formaEntrega = null;
     let carrinho, subtotal;
 
     const dadosPedido = await carregarPedidoFinalizacao();
+    const dadosEmpresaObj = await carregarEmpresa();
+    const dadosSessao = sessaoCarregada;
 
     if (
       !dadosPedido ||
@@ -1040,22 +1042,6 @@ async function gerenciarFinalizacao() {
     carrinho = dadosPedido.carrinho;
     subtotal = dadosPedido.subtotal;
 
-    console.log(carrinho, subtotal);
-
-    let dadosEmpresaObj = {};
-    if (
-      window.AppData &&
-      window.AppData.empresa &&
-      Object.keys(window.AppData.empresa).length > 0
-    ) {
-      dadosEmpresaObj = {
-        empresa: AppData.empresa,
-        parametros: AppData.parametros,
-      };
-    } else {
-      dadosEmpresaObj = await carregarEmpresa();
-    }
-
     const empresa = dadosEmpresaObj;
 
     const title = capturar("title");
@@ -1074,35 +1060,35 @@ async function gerenciarFinalizacao() {
       backdrop: "rgba(0,0,0,0.7)",
 
       html: `
-                <style>
-                    .entrega-button-group input[type="radio"] { display: none; }
-                    .entrega-button-group label {
-                        display: inline-block; padding: 8px 16px; margin: 5px;
-                        border: 1px solid #ccc; border-radius: 25px; cursor: pointer;
-                        font-weight: bold; transition: all 0.1s; width: 200px; text-align: center;
-                    }
-                    .entrega-button-group input[type="radio"]:checked + label {
-                        background-color: #080; color: white; border-color: #080;
-                        box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
-                    }
-                    .entrega-button-group .disabled { opacity: 0.6; cursor: not-allowed; }
-                </style>
-                
-                <div style="text-align: center;">
-                    <div class="entrega-button-group" style="display: inline-block;">
-                        <input type="radio" id="retirada" name="forma-entrega" value="R" />
-                        <label for="retirada">
-                            <i class="fas fa-walking"></i> Retirar <br> <small>Sem taxa de entrega</small>
-                        </label>
-                    </div>
+              <style>
+                .entrega-button-group input[type="radio"] { display: none; }
+                .entrega-button-group label {
+                display: inline-block; padding: 8px 16px; margin: 5px;
+                border: 1px solid #ccc; border-radius: 25px; cursor: pointer;
+                font-weight: bold; transition: all 0.1s; width: 200px; text-align: center;
+                }
+                  .entrega-button-group input[type="radio"]:checked + label {
+                  background-color: #080; color: white; border-color: #080;
+                  box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
+                }
+                .entrega-button-group .disabled { opacity: 0.6; cursor: not-allowed; }
+              </style>
 
-                    <div class="entrega-button-group" style="display: inline-block;">
-                        <input type="radio" id="entrega" name="forma-entrega" value="E" ${entregaDisabled} />
-                        <label for="entrega" class="${entregaDisabled}">
-                            <i class="fas fa-motorcycle"></i> ${textoEntrega}
-                        </label>
-                    </div>
+              <div style="text-align: center;">
+                <div class="entrega-button-group" style="display: inline-block;">
+                  <input type="radio" id="retirada" name="forma-entrega" value="R" />
+                  <label for="retirada">
+                  <i class="fas fa-walking"></i> Retirar <br> <small>Sem taxa de entrega</small>
+                  </label>
                 </div>
+
+                <div class="entrega-button-group" style="display: inline-block;">
+                  <input type="radio" id="entrega" name="forma-entrega" value="E" ${entregaDisabled} />
+                  <label for="entrega" class="${entregaDisabled}">
+                  <i class="fas fa-motorcycle"></i> ${textoEntrega}
+                  </label>
+                </div>
+              </div>
             `,
       confirmButtonText: "Confirmar",
       confirmButtonColor: "#080",
@@ -1127,41 +1113,56 @@ async function gerenciarFinalizacao() {
       formaEntrega = result.value;
     }
 
-    const btnAlterarTipo = capturar(".tipo button");
-    btnAlterarTipo.addEventListener("click", () => gerenciarFinalizacao());
-
     if (formaEntrega) {
       const divTipoEntrega = capturar(".tipo #info-entrega-atual");
-      const blocoTaxa = capturar("#bloco-taxa");
+      const blocoTaxa = capturar(".taxa#bloco-taxa");
+      const valorTaxa = capturar(".taxa #total-taxa");
       const blocoRetirada = capturar("#bloco-retirada");
+      const btnAlterarTipo = capturar(".tipo button");
+      const textoValorProduto = capturar(".row #total-produtos");
+      const precoTotalPedido = capturar(".row #total-geral");
+      const inputNomeF = capturar(".nomef #input-nome");
+      const inputFoneF = capturar(".fonef #input-fone");
+
+      btnAlterarTipo?.addEventListener("click", () =>
+        gerenciarFinalizacao(dadosSessao)
+      );
+
+      if (textoValorProduto) {
+        textoValorProduto.textContent = `R$ ${Number(subtotal).toFixed(2)}`;
+      }
+
+      if (dadosSessao && dadosSessao.usuario && inputFoneF) {
+        inputFoneF.value = dadosSessao.usuario.telefone;
+      }
 
       if (formaEntrega === "E") {
         divTipoEntrega.innerHTML = `
-                <i class="fas fa-motorcycle"></i> Entregar
-                `;
-
-        if (blocoTaxa) {
-          blocoTaxa.style.display = "flex";
-        }
+          <i class="fas fa-motorcycle"></i> Entregar
+          `;
 
         if (blocoRetirada) {
           blocoRetirada.style.display = "none";
         }
-      } else {
-        divTipoEntrega.innerHTML = `
-                <i class="fas fa-walking"></i> Retirar
-                `;
 
-        if (blocoTaxa) {
-          blocoTaxa.style.display = "none";
+        if (blocoTaxa && valorTaxa && precoTotalPedido) {
+          blocoTaxa.style.display = "flex";
+          valorTaxa.textContent = 5;
+          precoTotalPedido.textContent = `R$ ${
+            Number(subtotal) + Number(valorTaxa.textContent)
+          }`;
         }
+      } else {
+        const enderecoLoja = capturar("#endereco-loja");
+        const cidadeLoja = capturar("#cidade-loja");
+
+        divTipoEntrega.innerHTML = `
+          <i class="fas fa-walking"></i> Retirar
+          `;
 
         if (blocoRetirada) {
           blocoRetirada.style.display = "block";
         }
-
-        const enderecoLoja = capturar("#endereco-loja");
-        const cidadeLoja = capturar("#cidade-loja");
 
         if (enderecoLoja) {
           enderecoLoja.textContent = `${empresa.empresa.Endereco}, ${empresa.empresa.Numero} - ${empresa.empresa.Bairro}`;
@@ -1169,6 +1170,10 @@ async function gerenciarFinalizacao() {
 
         if (cidadeLoja) {
           cidadeLoja.textContent = `${empresa.empresa.Cidade}`;
+        }
+
+        if (precoTotalPedido) {
+          precoTotalPedido.textContent = `R$ ${Number(subtotal).toFixed(2)}`;
         }
       }
     }
@@ -1216,14 +1221,14 @@ async function carregarDadosIniciais() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  AppData.sessao = await verificacaoDaSessao();
+  const dadosSessaoCompleta = await verificacaoDaSessao();
+
+  AppData.sessao = dadosSessaoCompleta;
 
   if (window.location.pathname.endsWith("/index.html")) {
     await carregarDadosIniciais();
 
-    const foneDoUsuario = AppData.sessao.usuario
-      ? AppData.sessao.usuario.telefone
-      : null;
+    const foneDoUsuario = AppData.sessao?.usuario?.telefone ?? null;
 
     gerenciarInfoEmpresa(AppData.empresa, AppData.parametros);
     gerenciarCategoriasMercadorias(AppData.categorias, AppData.produtos);
@@ -1241,6 +1246,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (window.location.pathname.endsWith("/finalizar.html")) {
-    gerenciarFinalizacao();
+    gerenciarFinalizacao(dadosSessaoCompleta);
   }
 });

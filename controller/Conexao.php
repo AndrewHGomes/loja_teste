@@ -6,12 +6,14 @@ class Conexao
 {
   private static $instancia;
   private static $host = '127.0.0.1';
-  private static $dbName = 'delivery_raribbs';
+  private static $dbName = 'delivery_donarosa';
   private static $charset = 'utf8';
   private static $root = 'root';
   private static $senha = '';
 
   private function __construct() {}
+
+  //===========================================================================================
 
   public static function instancia()
   {

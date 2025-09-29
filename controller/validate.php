@@ -5,8 +5,6 @@ require_once 'Conexao.php';
 require_once 'Empresa.php';
 require_once 'Utilidades.php';
 
-$_SESSION['carrinho'] = [];
-
 if (!isset($_SESSION['usuario'])) {
   $_SESSION['usuario'] = [
     'id' => null,
@@ -15,6 +13,9 @@ if (!isset($_SESSION['usuario'])) {
     'origem' => null,
     'inicio' => null,
   ];
+  $_SESSION['carrinho'] = [];
+  $_SESSION['produto_selecionado'] = null;
+  $_SESSION['pedido_finalizacao'] = null;
 }
 
 $resposta = ['status' => 'erro'];
@@ -25,7 +26,6 @@ if (isset($_GET['tel'])) {
   {
     $chave = 10;
     $retorno = "";
-
     $valor_decodificado = utf8_decode($valor);
 
     for ($i = 0; $i < strlen($valor_decodificado); $i++) {

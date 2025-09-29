@@ -38,4 +38,9 @@ header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-W
 
 header('Content-Type: application/json');
 
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+  http_response_code(204);
+  exit;
+}
+
 date_default_timezone_set('America/Fortaleza');

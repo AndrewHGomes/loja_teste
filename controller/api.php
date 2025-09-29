@@ -31,13 +31,6 @@ try {
         $produtos = new Produtos();
         $dados = $produtos->pegarCategorias();
         break;
-      case 'tamanhos':
-        $cod = isset($_GET['cod']) ? $_GET['cod'] : null;
-        if ($cod) {
-          $produtos = new Produtos();
-          $dados = $produtos->pegarTamanhosDosProdutos($cod);
-        }
-        break;
       case 'complementos':
         $codigos = isset($_GET['codigos']) ? $_GET['codigos'] : null;
         if ($codigos) {
@@ -123,10 +116,7 @@ try {
         $dados = (isset($_SESSION['usuario']['telefone']) && !empty($_SESSION['usuario']['telefone'])) ? $_SESSION['usuario'] : null;
         break;
       case 'dados-sessao':
-        $dados = [
-          'usuario' => isset($_SESSION['usuario']) ? $_SESSION['usuario'] : null,
-          'carrinho' => isset($_SESSION['carrinho']) ? $_SESSION['carrinho'] : [],
-        ];
+        $dados = isset($_SESSION) ? $_SESSION : [];
         break;
       case 'pegar-pedido-finalizacao':
         $dados = isset($_SESSION['pedido_finalizacao']) ? $_SESSION['pedido_finalizacao'] : null;
@@ -163,9 +153,11 @@ try {
           $dados = ['message' => 'Dados do produto inválidos para o carrinho.'];
         }
         break;
-      case 'limpar-carrinho':
+      case 'limpar-pedido':
         $_SESSION['carrinho'] = [];
-        $dados = ['message' => 'Carrinho limpo com sucesso.'];
+        $_SESSION['produto_selecionado'] = null;
+        $_SESSION['pedido_finalizacao'] = null;
+        $dados = ['message' => 'Todos os dados do pedido foram limpos.'];
         break;
       case 'remover-item-carrinho':
         $json_payload = file_get_contents('php://input');
@@ -175,6 +167,14 @@ try {
           if (isset($_SESSION['carrinho'][$index])) {
             array_splice($_SESSION['carrinho'], $index, 1);
             $dados = ['message' => 'Produto removido do carrinho.'];
+            if (isset($_SESSION['pedido_finalizacao'])) {
+              $subtotal = 0;
+              foreach ($_SESSION['carrinho'] as $item) {
+                $subtotal += $item['total'];
+              }
+              $_SESSION['pedido_finalizacao']['carrinho'] = $_SESSION['carrinho'];
+              $_SESSION['pedido_finalizacao']['subtotal'] = number_format($subtotal, 2, '.', '');
+            }
           } else {
             $dados = ['message' => 'Índice do produto inválido.'];
           }
