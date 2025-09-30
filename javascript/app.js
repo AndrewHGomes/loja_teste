@@ -1073,36 +1073,36 @@ async function gerenciarFinalizacao(sessaoCarregada) {
       backdrop: "rgba(0,0,0,0.7)",
 
       html: `
-            <style>
-              .entrega-button-group input[type="radio"] { display: none; }
-              .entrega-button-group label {
-                display: inline-block; padding: 8px 16px; margin: 5px;
-                border: 1px solid #ccc; border-radius: 25px; cursor: pointer;
-                font-weight: bold; transition: all 0.1s; width: 200px; text-align: center;
-              }
-              .entrega-button-group input[type="radio"]:checked + label {
-                background-color: #080; color: white; border-color: #080;
-                box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
-              }
-              .entrega-button-group .disabled { opacity: 0.6; cursor: not-allowed; }
-            </style>
+                <style>
+                  .entrega-button-group input[type="radio"] { display: none; }
+                  .entrega-button-group label {
+                    display: inline-block; padding: 8px 16px; margin: 5px;
+                    border: 1px solid #ccc; border-radius: 25px; cursor: pointer;
+                    font-weight: bold; transition: all 0.1s; width: 200px; text-align: center;
+                  }
+                  .entrega-button-group input[type="radio"]:checked + label {
+                    background-color: #080; color: white; border-color: #080;
+                    box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
+                  }
+                  .entrega-button-group .disabled { opacity: 0.6; cursor: not-allowed; }
+                </style>
 
-            <div style="text-align: center;">
-              <div class="entrega-button-group" style="display: inline-block;">
-                <input type="radio" id="retirada" name="forma-entrega" value="R" />
-                <label for="retirada">
-                <i class="fas fa-walking"></i> Retirar <br> <small>Sem taxa de entrega</small>
-                </label>
-              </div>
+                <div style="text-align: center;">
+                  <div class="entrega-button-group" style="display: inline-block;">
+                    <input type="radio" id="retirada" name="forma-entrega" value="R" />
+                    <label for="retirada">
+                    <i class="fas fa-walking"></i> Retirar <br> <small>Sem taxa de entrega</small>
+                    </label>
+                  </div>
 
-              <div class="entrega-button-group" style="display: inline-block;">
-                <input type="radio" id="entrega" name="forma-entrega" value="E" ${entregaDisabled} />
-                <label for="entrega" class="${entregaDisabled}">
-                <i class="fas fa-motorcycle"></i> ${textoEntrega}
-                </label>
-              </div>
-            </div>
-            `,
+                  <div class="entrega-button-group" style="display: inline-block;">
+                    <input type="radio" id="entrega" name="forma-entrega" value="E" ${entregaDisabled} />
+                    <label for="entrega" class="${entregaDisabled}">
+                    <i class="fas fa-motorcycle"></i> ${textoEntrega}
+                    </label>
+                  </div>
+                </div>
+                `,
       confirmButtonText: "Confirmar",
       confirmButtonColor: "#080",
       allowOutsideClick: false,
@@ -1136,6 +1136,8 @@ async function gerenciarFinalizacao(sessaoCarregada) {
       const precoTotalPedido = capturar(".row #total-geral");
       const inputNomeF = capturar(".nomef #input-nome");
       const inputFoneF = capturar(".fonef #input-fone");
+      const blocoPagamento = capturar("#forma-pagamento");
+      const btnFinalizar = capturar("#btn-finalizar");
 
       btnAlterarTipo?.addEventListener("click", () =>
         gerenciarFinalizacao(dadosSessao)
@@ -1149,6 +1151,9 @@ async function gerenciarFinalizacao(sessaoCarregada) {
         inputFoneF.value = dadosSessao.usuario.telefone;
       }
 
+      let totalGeral = Number(subtotal);
+      let enderecoParaEnvio = null;
+
       if (formaEntrega === "E") {
         const bairrosOptions = bairros.length
           ? bairros
@@ -1159,46 +1164,46 @@ async function gerenciarFinalizacao(sessaoCarregada) {
         const { value: enderecoEntrega } = await Swal.fire({
           title: "Informe seu Endereço",
           html: `
-            <style>
-              .swal2-title {
-                font-size: 1.1em !important; 
-              }
-              .swal2-html-container {
-                display: flex;
-                flex-direction: column;
-                align-items: center; 
-                padding: 0 10px;
-                margin: 0;
-                overflow: hidden;
-              }
-              .swal2-input, .swal2-select {
-                max-width: 300px; 
-                width: 100%;
-                margin: 5px 0 !important; 
-                padding: .5em; 
-                box-sizing: border-box;
-                text-align: left;
-                font-size: 0.9em; 
-              }
-              .swal2-popup {
-                max-width: 350px !important;
-                width: 90%;
-                overflow-y: auto;
-                overflow-x: hidden !important;
-              }
-              .swal2-actions button {
-                font-size: 0.95em !important;
-              }
-            </style>
-            <select id="swal-bairro" class="swal2-input swal2-select">
-              <option value="">Selecione o bairro</option>
-              ${bairrosOptions}
-            </select>
-            <input id="swal-rua" class="swal2-input" placeholder="Rua, Av.:" autocomplete="street-address">
-            <input id="swal-numero" class="swal2-input" placeholder="Número:" autocomplete="address-line2">
-            <input id="swal-complemento" class="swal2-input" placeholder="Complemento (opcional)">
-            <input id="swal-referencia" class="swal2-input" placeholder="Referência (opcional)">
-          `,
+                <style>
+                    .swal2-title {
+                        font-size: 1.1em !important; 
+                    }
+                    .swal2-html-container {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center; 
+                        padding: 0 10px;
+                        margin: 0;
+                        overflow: hidden;
+                    }
+                    .swal2-input, .swal2-select {
+                        max-width: 300px; 
+                        width: 100%;
+                        margin: 5px 0 !important; 
+                        padding: .5em; 
+                        box-sizing: border-box;
+                        text-align: left;
+                        font-size: 0.9em; 
+                    }
+                    .swal2-popup {
+                        max-width: 350px !important;
+                        width: 90%;
+                        overflow-y: auto;
+                        overflow-x: hidden !important;
+                    }
+                    .swal2-actions button {
+                        font-size: 0.95em !important;
+                    }
+                </style>
+                <select id="swal-bairro" class="swal2-input swal2-select">
+                    <option value="">Selecione o bairro</option>
+                    ${bairrosOptions}
+                </select>
+                <input id="swal-rua" class="swal2-input" placeholder="Rua, Av.:" autocomplete="street-address">
+                <input id="swal-numero" class="swal2-input" placeholder="Número:" autocomplete="address-line2">
+                <input id="swal-complemento" class="swal2-input" placeholder="Complemento (opcional)">
+                <input id="swal-referencia" class="swal2-input" placeholder="Referência (opcional)">
+                `,
           focusConfirm: false,
           confirmButtonText: "Confirmar",
           confirmButtonColor: "#080",
@@ -1240,42 +1245,33 @@ async function gerenciarFinalizacao(sessaoCarregada) {
         });
 
         if (!enderecoEntrega) {
-          Swal.fire(
-            "Atenção",
-            "Endereço não informado. Não é possível finalizar.",
-            "warning"
-          );
           return;
         }
 
-        divTipoEntrega.innerHTML = `
-          <i class="fas fa-motorcycle"></i> Entregar
-          `;
+        enderecoParaEnvio = enderecoEntrega;
+        const taxa = enderecoEntrega.taxa || 0;
+        totalGeral = Number(subtotal) + Number(taxa);
+
+        divTipoEntrega.innerHTML = `<i class="fas fa-motorcycle"></i> Entregar`;
 
         if (blocoRetirada) {
           blocoRetirada.style.display = "none";
         }
-
-        if (blocoTaxa && elementoTaxa && precoTotalPedido) {
-          const taxa = enderecoEntrega.taxa || 0;
-          const totalComEntrega = Number(subtotal) + Number(taxa);
-
+        if (blocoTaxa) {
           blocoTaxa.style.display = "flex";
           elementoTaxa.textContent = `R$ ${taxa.toFixed(2)}`;
-          precoTotalPedido.textContent = `R$ ${totalComEntrega.toFixed(2)}`;
         }
       } else {
         const enderecoLoja = capturar("#endereco-loja");
         const cidadeLoja = capturar("#cidade-loja");
 
-        divTipoEntrega.innerHTML = `
-          <i class="fas fa-walking"></i> Retirar
-          `;
+        totalGeral = Number(subtotal);
+
+        divTipoEntrega.innerHTML = `<i class="fas fa-walking"></i> Retirar`;
 
         if (blocoRetirada) {
           blocoRetirada.style.display = "block";
         }
-
         if (blocoTaxa) {
           blocoTaxa.style.display = "none";
         }
@@ -1287,10 +1283,44 @@ async function gerenciarFinalizacao(sessaoCarregada) {
         if (cidadeLoja) {
           cidadeLoja.textContent = `${empresa.empresa.Cidade}`;
         }
+      }
 
-        if (precoTotalPedido) {
-          precoTotalPedido.textContent = `R$ ${Number(subtotal).toFixed(2)}`;
-        }
+      if (blocoPagamento) {
+        blocoPagamento.style.display = "none";
+      }
+
+      if (precoTotalPedido) {
+        precoTotalPedido.textContent = `R$ ${totalGeral.toFixed(2)}`;
+      }
+
+      if (btnFinalizar) {
+        btnFinalizar.removeEventListener("click", btnFinalizar.currentHandler);
+
+        const finalizacaoHandler = async () => {
+          const nomeCliente = inputNomeF.value.trim();
+
+          if (!nomeCliente || nomeCliente.length < 3) {
+            Swal.fire(
+              "Atenção",
+              "Por favor, preencha seu nome corretamente.",
+              "warning"
+            );
+            return;
+          }
+
+          if (formaEntrega === "E") {
+            await showModalPagamentoEntrega(totalGeral);
+          } else {
+            await Swal.fire(
+              "Pedido Finalizado!",
+              "Simulação: Retirada no local.",
+              "success"
+            );
+          }
+        };
+
+        btnFinalizar.addEventListener("click", finalizacaoHandler);
+        btnFinalizar.currentHandler = finalizacaoHandler;
       }
     }
   } catch (error) {
@@ -1303,6 +1333,237 @@ async function gerenciarFinalizacao(sessaoCarregada) {
     ).then(() => {
       window.location.href = "./carrinho.html";
     });
+  }
+}
+
+//========================================================================================//
+
+function ocultarComplementosPagamento(container) {
+  const inputTroco = container.querySelector("#input-troco-modal");
+  const infoPixBox = container.querySelector("#info-pix-box-modal");
+
+  if (inputTroco) {
+    inputTroco.style.display = "none";
+    inputTroco.value = "0";
+  }
+  if (infoPixBox) {
+    infoPixBox.style.display = "none";
+  }
+}
+
+function exibirTroco(container) {
+  ocultarComplementosPagamento(container);
+
+  const inputTroco = container.querySelector("#input-troco-modal");
+  if (inputTroco) {
+    inputTroco.style.display = "block";
+    inputTroco.focus();
+  }
+}
+
+function exibirPix(container) {
+  ocultarComplementosPagamento(container);
+
+  const infoPixBox = container.querySelector("#info-pix-box-modal");
+  if (infoPixBox) {
+    infoPixBox.style.display = "block";
+  }
+}
+
+function copiarChavePix(chave) {
+  if (navigator.clipboard) {
+    navigator.clipboard
+      .writeText(chave)
+      .then(() => {
+        Swal.fire(
+          "Copiado! ✅",
+          "A chave PIX foi copiada para a área de transferência.",
+          "success"
+        );
+      })
+      .catch((err) => {
+        console.error("Erro ao copiar:", err);
+        Swal.fire(
+          "Erro ❌",
+          "Não foi possível copiar a chave automaticamente.",
+          "error"
+        );
+      });
+  } else {
+    Swal.fire(
+      "Atenção",
+      "Seu navegador não suporta cópia automática. Copie a chave manualmente: " +
+        chave,
+      "warning"
+    );
+  }
+}
+
+async function showModalPagamentoEntrega(totalGeral) {
+  const totalFormatado = totalGeral.toFixed(2);
+  const CHAVE_PIX = "(35) 98888-7777";
+  const NOME_EMPRESA = "Restaurante Simulado LTDA";
+
+  const result = await Swal.fire({
+    title: "ESCOLHA O PAGAMENTO",
+    icon: "question",
+    backdrop: "rgba(0,0,0,0.7)",
+    html: `
+            <style>
+                /* Estilos reintroduzidos para os botões de rádio */
+                #forma-pagamento-modal {
+                    gap: 0.3em !important; /* REDUZIDO: Espaçamento menor entre os blocos principais */
+                }
+                #forma-pagamento-modal .radio {
+                    display: block;
+                    cursor: pointer;
+                    margin: 0.3em 0; /* REDUZIDO: Margem vertical menor entre os botões */
+                }
+                #forma-pagamento-modal .radio input[type="radio"] {
+                    display: none;
+                }
+                #forma-pagamento-modal .radio span {
+                    display: block;
+                    padding: 0.5em;
+                    border: 1px solid #ccc;
+                    border-radius: 2px;
+                    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+                    text-align: center;
+                    font-weight: bold;
+                    color: #333;
+                }
+                #forma-pagamento-modal .radio:hover span {
+                    background-color: #f0f0f0;
+                    border-color: #080;
+                }
+                #forma-pagamento-modal .radio input[type="radio"]:checked + span {
+                    background-color: #cfffc1;
+                    border-color: #080;
+                    box-shadow: 0 0 5px rgba(0, 128, 0, 0.5); /* Sombra verde */
+                    color: #000;
+                }
+                /* Estilo do input de Troco */
+                #input-troco-modal {
+                    margin-top: 5px; /* ESPAÇAMENTO AJUSTADO */
+                    margin-bottom: 5px; /* ESPAÇAMENTO AJUSTADO */
+                }
+                /* Estilo da caixa de Info PIX */
+                #info-pix-box-modal {
+                    margin-top: 8px; /* ESPAÇAMENTO AJUSTADO */
+                    padding: 8px; /* REDUZIDO: Padding interno da caixa */
+                    background-color: #f7f7f7;
+                    border: 1px dashed #080;
+                    border-radius: 4px;
+                }
+                #info-pix-box-modal p {
+                    margin: 1px 0; /* REDUZIDO: Margem entre as linhas de texto */
+                    font-size: 0.9em;
+                }
+                #info-pix-box-modal #btn-copiar-pix-modal {
+                    margin-top: 4px; /* ESPAÇAMENTO AJUSTADO */
+                    padding: 6px 10px; /* REDUZIDO: Padding do botão */
+                }
+            </style>
+
+            <div id="forma-pagamento-modal" style="display: flex; flex-direction: column; gap: 0.3em; text-align: left; width: 100%;">
+                <p style="text-align: center; margin-bottom: 5px;">Total a pagar: <b>R$ ${totalFormatado}</b></p>
+                <hr style="border-top: 1px solid #cfffc1; margin: 2px 0;" /> <label class="radio dinheiro">
+                    <input type="radio" required class="pagamento-dinheiro" name="forma-pagamento-modal" value="D" checked />
+                    <span><i class="fa-solid fa-money-bill-wave"></i> Dinheiro</span>
+                </label>
+                <input type="number" id="input-troco-modal" placeholder="Levar Troco Para R$ ?" value="0" 
+                       style="display: none; padding: 0.5em; border: 1px solid #080; outline: none; text-align: center; width: 100%; box-sizing: border-box;" />
+
+                <label class="radio cartao">
+                    <input type="radio" required class="pagamento-cartao" name="forma-pagamento-modal" value="C" />
+                    <span><i class="fa-solid fa-credit-card"></i> Cartão</span>
+                </label>
+
+                <label class="radio pix">
+                    <input type="radio" required class="pagamento-pix" name="forma-pagamento-modal" value="P" />
+                    <span><i class="fa-brands fa-pix"></i> Pix</span>
+                </label>
+                
+                <div id="info-pix-box-modal" style="display: none; text-align: center;">
+                    <p style="font-weight: bold; color: #080;">Chave PIX (Telefone):</p>
+                    <p id="chave-pix-info-modal" style="font-size: 1em; font-weight: bold; color: #333;">${CHAVE_PIX}</p>
+                    <p>Empresa: ${NOME_EMPRESA}</p>
+                    <button id="btn-copiar-pix-modal" style="background-color: #080; color: white; border: none; padding: 6px 10px; border-radius: 50px; cursor: pointer; font-weight: bold; font-size: 0.85em; margin-top: 4px;">
+                        Copiar Chave
+                    </button>
+                </div>
+            </div>
+        `,
+    confirmButtonText: "Confirmar Pedido",
+    confirmButtonColor: "#080",
+    showCancelButton: true,
+    cancelButtonText: "Voltar",
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    focusConfirm: false,
+
+    didOpen: (modalElement) => {
+      const container = modalElement.querySelector("#forma-pagamento-modal");
+      const radioDinheiro = container.querySelector(".pagamento-dinheiro");
+      const radioCartao = container.querySelector(".pagamento-cartao");
+      const radioPix = container.querySelector(".pagamento-pix");
+      const btnCopiar = container.querySelector("#btn-copiar-pix-modal");
+
+      exibirTroco(container);
+
+      radioDinheiro?.addEventListener("change", () => exibirTroco(container));
+      radioCartao?.addEventListener("change", () =>
+        ocultarComplementosPagamento(container)
+      );
+      radioPix?.addEventListener("change", () => exibirPix(container));
+
+      if (btnCopiar) {
+        const copyHandler = () => copiarChavePix(CHAVE_PIX);
+        btnCopiar.addEventListener("click", copyHandler);
+
+        btnCopiar.currentHandler = copyHandler;
+      }
+    },
+
+    preConfirm: () => {
+      const radioSelecionado = document.querySelector(
+        'input[name="forma-pagamento-modal"]:checked'
+      );
+
+      if (!radioSelecionado) {
+        Swal.showValidationMessage("Selecione uma forma de pagamento.");
+        return false;
+      }
+
+      if (radioSelecionado.value === "D") {
+        const inputTroco = document.querySelector("#input-troco-modal");
+
+        if (inputTroco.style.display !== "none") {
+          const troco = Number(inputTroco.value) || 0;
+
+          if (troco > 0 && troco < totalGeral) {
+            Swal.showValidationMessage(
+              `O valor do troco (R$ ${troco.toFixed(
+                2
+              )}) deve ser igual ou maior que o total do pedido (R$ ${totalGeral.toFixed(
+                2
+              )}).`
+            );
+            return false;
+          }
+        }
+      }
+
+      return true;
+    },
+  });
+
+  if (result.isConfirmed) {
+    await Swal.fire(
+      "Pedido Finalizado!",
+      "Simulação: Pagamento escolhido. Próxima etapa seria a submissão.",
+      "success"
+    );
   }
 }
 
@@ -1335,6 +1596,8 @@ async function carregarDadosIniciais() {
     AppData.produtos = [];
   }
 }
+
+//========================================================================================//
 
 document.addEventListener("DOMContentLoaded", async () => {
   const dadosSessaoCompleta = await verificacaoDaSessao();

@@ -11,10 +11,11 @@
     <link rel="stylesheet" href="./css/global.css" />
     <link rel="stylesheet" href="./css/finalizar.css" />
     <script src="./javascript/sweetalert2.all.min.js"></script>
-    <script type="module" src="./javascript/app.js" defer></script>
     <script type="module" src="./javascript/alpine.min.js" defer></script>
-    <title></title>
+    <script type="module" src="./javascript/app.js" defer></script>
+    <title>Finalizar Pedido</title>
   </head>
+
   <body>
     <nav id="nav-voltar">
       <a href="./carrinho.html">
@@ -22,6 +23,7 @@
         VOLTAR
       </a>
     </nav>
+
     <main>
       <section id="checkout-container">
         <h3>Tipo de Entrega</h3>
@@ -62,54 +64,6 @@
           <input type="text" id="input-fone" class="fone" readonly />
         </fieldset>
 
-        <div id="forma-pagamento" style="display: none">
-          <h3>Forma de Pagamento</h3>
-
-          <label class="radio dinheiro">
-            <input
-              type="radio"
-              required
-              class="pagamento-dinheiro"
-              name="forma-pagamento"
-              value="D"
-              onclick="exibirTroco()"
-            />
-            <span>Dinheiro</span>
-          </label>
-
-          <input
-            type="number"
-            id="input-troco"
-            class="radio troco"
-            placeholder="Levar Troco Para ?"
-            value="0"
-            style="display: none"
-          />
-
-          <label class="radio cartao">
-            <input
-              type="radio"
-              required
-              class="pagamento-cartao"
-              name="forma-pagamento"
-              value="C"
-              onclick="ocultarTroco()"
-            />
-            <span>Cartão</span>
-          </label>
-
-          <label class="radio pix">
-            <input
-              type="radio"
-              required
-              class="pagamento-pix"
-              name="forma-pagamento"
-              value="P"
-              onclick="ocultarTroco()"
-            />
-            <span>Pix</span>
-          </label>
-        </div>
         <button id="btn-finalizar" class="confirm">Finalizar</button>
       </section>
     </main>
