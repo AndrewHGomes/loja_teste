@@ -105,23 +105,23 @@ class Utilidades
   }
 
 
-  public function pegarTaxaPorBairro($bairroSelecionado, $taxaFixaEmpresa)
+  public function pegarTaxaPorBairro($bairroSelecionado)
   {
     try {
-      $sql = "SELECT taxa FROM bairros WHERE nome = :bairro LIMIT 1";
+      $sql = "SELECT Valor FROM bairros WHERE Bairro = :bairro LIMIT 1";
       $stmt = $this->conexao->prepare($sql);
       $stmt->bindParam(':bairro', $bairroSelecionado, PDO::PARAM_STR);
       $stmt->execute();
-      $result = $stmt->fetch(PDO::FETCH_ASSOC);
+      $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
 
-      if ($result && isset($result['taxa']) && floatval($result['taxa']) > 0) {
-        return floatval($result['taxa']);
+      if ($resultado && isset($resultado['Valor'])) {
+        return floatval($resultado['Valor']);
       } else {
-        return floatval($taxaFixaEmpresa);
+        return null;
       }
     } catch (PDOException $e) {
       error_log("Erro ao verificar taxa do bairro: " . $e->getMessage());
-      return floatval($taxaFixaEmpresa);
+      return null;
     }
   }
 }

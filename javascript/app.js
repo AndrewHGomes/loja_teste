@@ -8,7 +8,11 @@ const AppData = {
 };
 
 import { apiPost } from "./api.js";
-import { carregarEmpresa, carregarHorarios } from "./empresa.js";
+import {
+  carregarEmpresa,
+  carregarHorarios,
+  carregarTaxaEntrega,
+} from "./empresa.js";
 import {
   carregarProdutos,
   carregarCategorias,
@@ -1028,6 +1032,7 @@ async function gerenciarFinalizacao(sessaoCarregada) {
     const dadosPedido = await carregarPedidoFinalizacao();
     const dadosEmpresaObj = await carregarEmpresa();
     const dadosSessao = sessaoCarregada;
+    const taxaEntrega = await carregarTaxaEntrega();
 
     if (
       !dadosPedido ||
@@ -1121,8 +1126,9 @@ async function gerenciarFinalizacao(sessaoCarregada) {
     if (formaEntrega) {
       const divTipoEntrega = capturar(".tipo #info-entrega-atual");
       const blocoTaxa = capturar(".taxa#bloco-taxa");
-      const valorTaxa = capturar(".taxa #total-taxa");
+      const elementoTaxa = capturar(".taxa #total-taxa");
       const blocoRetirada = capturar("#bloco-retirada");
+      const blocoEntrega = capturar("#bloco-entrega");
       const btnAlterarTipo = capturar(".tipo button");
       const textoValorProduto = capturar(".row #total-produtos");
       const precoTotalPedido = capturar(".row #total-geral");
@@ -1142,6 +1148,8 @@ async function gerenciarFinalizacao(sessaoCarregada) {
       }
 
       if (formaEntrega === "E") {
+        blocoEntrega.style.display = "flex";
+
         divTipoEntrega.innerHTML = `
           <i class="fas fa-motorcycle"></i> Entregar
           `;
@@ -1150,11 +1158,11 @@ async function gerenciarFinalizacao(sessaoCarregada) {
           blocoRetirada.style.display = "none";
         }
 
-        if (blocoTaxa && valorTaxa && precoTotalPedido) {
+        if (blocoTaxa && elementoTaxa && precoTotalPedido) {
           blocoTaxa.style.display = "flex";
-          valorTaxa.textContent = 5;
+          elementoTaxa.textContent = 5;
           precoTotalPedido.textContent = `R$ ${
-            Number(subtotal) + Number(valorTaxa.textContent)
+            Number(subtotal) + Number(elementoTaxa.textContent)
           }`;
         }
       } else {

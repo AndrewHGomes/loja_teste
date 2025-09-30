@@ -98,6 +98,34 @@
   font-size: 1em;
 }
 
+#checkout-container #bloco-entrega {
+  background-color: #fff;
+  padding: 0.5em;
+  width: 100%;
+  height: 50dvh;
+  bottom: 0;
+  left: 0;
+  position: fixed;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+
+#checkout-container #bloco-entrega select {
+  width: 100%;
+  padding: 0.5em;
+}
+
+#checkout-container #bloco-entrega label {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#checkout-container #bloco-entrega label input {
+  padding: 0.5em;
+}
+
 #checkout-container #forma-pagamento {
   display: flex;
   flex-direction: column;

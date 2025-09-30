@@ -127,14 +127,10 @@ try {
         }
         break;
       case 'taxa-entrega':
-        $json_payload = file_get_contents('php://input');
-        $payload = json_decode($json_payload, true);
-        if (isset($payload['bairro']) && !empty($payload['bairro'])) {
+        $bairro = isset($_GET['bairro']) ? $_GET['bairro'] : null;
+        if ($bairro) {
           $util = new Utilidades();
-          $empresa = new Empresa();
-          $parametros = $empresa->pegarDadosDaEmpresa();
-          $taxaFixa = isset($parametros['taxaentrega']) ? $parametros['taxaentrega'] : 0;
-          $taxa = $util->pegarTaxaPorBairro($payload['bairro'], $taxaFixa);
+          $taxa = $util->pegarTaxaPorBairro($bairro);
           $dados = ['taxa' => $taxa];
         } else {
           $response_code = 400;

@@ -6,7 +6,7 @@ class Conexao
 {
   private static $instancia;
   private static $host = '127.0.0.1';
-  private static $dbName = 'delivery_madrugaslanches';
+  private static $dbName = 'delivery_raribbs';
   private static $charset = 'utf8';
   private static $root = 'root';
   private static $senha = '';

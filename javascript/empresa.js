@@ -17,3 +17,14 @@ export async function carregarEmpresa() {
 export async function carregarHorarios() {
   return await apiGet("horarios");
 }
+
+export async function carregarTaxaEntrega(bairro, taxaFixaEmpresa) {
+  const resposta = await apiGet(
+    `taxa-entrega&bairro=${encodeURIComponent(bairro)}`
+  );
+
+  if (resposta.taxa !== null && resposta.taxa > 0) {
+    return resposta.taxa;
+  }
+  return taxaFixaEmpresa;
+}
