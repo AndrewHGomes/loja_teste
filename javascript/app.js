@@ -11,6 +11,7 @@ import { apiPost } from "./api.js";
 import {
   carregarEmpresa,
   carregarHorarios,
+  carregarBairros,
   carregarTaxaEntrega,
 } from "./empresa.js";
 import {
@@ -1032,7 +1033,7 @@ async function gerenciarFinalizacao(sessaoCarregada) {
     const dadosPedido = await carregarPedidoFinalizacao();
     const dadosEmpresaObj = await carregarEmpresa();
     const dadosSessao = sessaoCarregada;
-    const taxaEntrega = await carregarTaxaEntrega();
+    const bairros = await carregarBairros();
 
     if (
       !dadosPedido ||
@@ -1054,6 +1055,8 @@ async function gerenciarFinalizacao(sessaoCarregada) {
 
     const empresa = dadosEmpresaObj;
 
+    const taxaPadraoEmpresa = Number(empresa.parametros.taxaentrega || 0);
+
     const title = capturar("title");
     title.textContent = empresa.empresa.Fantasia;
 
@@ -1070,35 +1073,35 @@ async function gerenciarFinalizacao(sessaoCarregada) {
       backdrop: "rgba(0,0,0,0.7)",
 
       html: `
-              <style>
-                .entrega-button-group input[type="radio"] { display: none; }
-                .entrega-button-group label {
+            <style>
+              .entrega-button-group input[type="radio"] { display: none; }
+              .entrega-button-group label {
                 display: inline-block; padding: 8px 16px; margin: 5px;
                 border: 1px solid #ccc; border-radius: 25px; cursor: pointer;
                 font-weight: bold; transition: all 0.1s; width: 200px; text-align: center;
-                }
-                  .entrega-button-group input[type="radio"]:checked + label {
-                  background-color: #080; color: white; border-color: #080;
-                  box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
-                }
-                .entrega-button-group .disabled { opacity: 0.6; cursor: not-allowed; }
-              </style>
+              }
+              .entrega-button-group input[type="radio"]:checked + label {
+                background-color: #080; color: white; border-color: #080;
+                box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
+              }
+              .entrega-button-group .disabled { opacity: 0.6; cursor: not-allowed; }
+            </style>
 
-              <div style="text-align: center;">
-                <div class="entrega-button-group" style="display: inline-block;">
-                  <input type="radio" id="retirada" name="forma-entrega" value="R" />
-                  <label for="retirada">
-                  <i class="fas fa-walking"></i> Retirar <br> <small>Sem taxa de entrega</small>
-                  </label>
-                </div>
-
-                <div class="entrega-button-group" style="display: inline-block;">
-                  <input type="radio" id="entrega" name="forma-entrega" value="E" ${entregaDisabled} />
-                  <label for="entrega" class="${entregaDisabled}">
-                  <i class="fas fa-motorcycle"></i> ${textoEntrega}
-                  </label>
-                </div>
+            <div style="text-align: center;">
+              <div class="entrega-button-group" style="display: inline-block;">
+                <input type="radio" id="retirada" name="forma-entrega" value="R" />
+                <label for="retirada">
+                <i class="fas fa-walking"></i> Retirar <br> <small>Sem taxa de entrega</small>
+                </label>
               </div>
+
+              <div class="entrega-button-group" style="display: inline-block;">
+                <input type="radio" id="entrega" name="forma-entrega" value="E" ${entregaDisabled} />
+                <label for="entrega" class="${entregaDisabled}">
+                <i class="fas fa-motorcycle"></i> ${textoEntrega}
+                </label>
+              </div>
+            </div>
             `,
       confirmButtonText: "Confirmar",
       confirmButtonColor: "#080",
@@ -1128,7 +1131,6 @@ async function gerenciarFinalizacao(sessaoCarregada) {
       const blocoTaxa = capturar(".taxa#bloco-taxa");
       const elementoTaxa = capturar(".taxa #total-taxa");
       const blocoRetirada = capturar("#bloco-retirada");
-      const blocoEntrega = capturar("#bloco-entrega");
       const btnAlterarTipo = capturar(".tipo button");
       const textoValorProduto = capturar(".row #total-produtos");
       const precoTotalPedido = capturar(".row #total-geral");
@@ -1148,7 +1150,103 @@ async function gerenciarFinalizacao(sessaoCarregada) {
       }
 
       if (formaEntrega === "E") {
-        blocoEntrega.style.display = "flex";
+        const bairrosOptions = bairros.length
+          ? bairros
+              .map((b) => `<option value="${b.Bairro}">${b.Bairro}</option>`)
+              .join("")
+          : "<option value=''>Nenhum bairro cadastrado</option>";
+
+        const { value: enderecoEntrega } = await Swal.fire({
+          title: "Informe seu Endereço",
+          html: `
+            <style>
+              .swal2-title {
+                font-size: 1.1em !important; 
+              }
+              .swal2-html-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center; 
+                padding: 0 10px;
+                margin: 0;
+                overflow: hidden;
+              }
+              .swal2-input, .swal2-select {
+                max-width: 300px; 
+                width: 100%;
+                margin: 5px 0 !important; 
+                padding: .5em; 
+                box-sizing: border-box;
+                text-align: left;
+                font-size: 0.9em; 
+              }
+              .swal2-popup {
+                max-width: 350px !important;
+                width: 90%;
+                overflow-y: auto;
+                overflow-x: hidden !important;
+              }
+              .swal2-actions button {
+                font-size: 0.95em !important;
+              }
+            </style>
+            <select id="swal-bairro" class="swal2-input swal2-select">
+              <option value="">Selecione o bairro</option>
+              ${bairrosOptions}
+            </select>
+            <input id="swal-rua" class="swal2-input" placeholder="Rua, Av.:" autocomplete="street-address">
+            <input id="swal-numero" class="swal2-input" placeholder="Número:" autocomplete="address-line2">
+            <input id="swal-complemento" class="swal2-input" placeholder="Complemento (opcional)">
+            <input id="swal-referencia" class="swal2-input" placeholder="Referência (opcional)">
+          `,
+          focusConfirm: false,
+          confirmButtonText: "Confirmar",
+          confirmButtonColor: "#080",
+          preConfirm: async () => {
+            const bairroNome = capturar("#swal-bairro").value;
+            const rua = capturar("#swal-rua").value;
+            const numero = capturar("#swal-numero").value;
+            const complemento = capturar("#swal-complemento").value;
+            const referencia = capturar("#swal-referencia").value;
+
+            if (!bairroNome || !rua || !numero) {
+              Swal.showValidationMessage("Preencha bairro, rua e número!");
+              return false;
+            }
+
+            let taxaCalculada = 0;
+            try {
+              taxaCalculada = await carregarTaxaEntrega(
+                bairroNome,
+                taxaPadraoEmpresa
+              );
+            } catch (error) {
+              console.error("Erro ao carregar taxa:", error);
+              Swal.showValidationMessage(
+                "Falha ao calcular a taxa de entrega."
+              );
+              return false;
+            }
+
+            return {
+              bairro: bairroNome,
+              rua,
+              numero,
+              complemento,
+              referencia,
+              taxa: taxaCalculada,
+            };
+          },
+        });
+
+        if (!enderecoEntrega) {
+          Swal.fire(
+            "Atenção",
+            "Endereço não informado. Não é possível finalizar.",
+            "warning"
+          );
+          return;
+        }
 
         divTipoEntrega.innerHTML = `
           <i class="fas fa-motorcycle"></i> Entregar
@@ -1159,11 +1257,12 @@ async function gerenciarFinalizacao(sessaoCarregada) {
         }
 
         if (blocoTaxa && elementoTaxa && precoTotalPedido) {
+          const taxa = enderecoEntrega.taxa || 0;
+          const totalComEntrega = Number(subtotal) + Number(taxa);
+
           blocoTaxa.style.display = "flex";
-          elementoTaxa.textContent = 5;
-          precoTotalPedido.textContent = `R$ ${
-            Number(subtotal) + Number(elementoTaxa.textContent)
-          }`;
+          elementoTaxa.textContent = `R$ ${taxa.toFixed(2)}`;
+          precoTotalPedido.textContent = `R$ ${totalComEntrega.toFixed(2)}`;
         }
       } else {
         const enderecoLoja = capturar("#endereco-loja");
@@ -1175,6 +1274,10 @@ async function gerenciarFinalizacao(sessaoCarregada) {
 
         if (blocoRetirada) {
           blocoRetirada.style.display = "block";
+        }
+
+        if (blocoTaxa) {
+          blocoTaxa.style.display = "none";
         }
 
         if (enderecoLoja) {

@@ -154,4 +154,21 @@ class Empresa
       return false;
     }
   }
+
+  //===========================================================================================
+
+  public function pegarTodosOsBairros()
+  {
+    try {
+      $sql = "SELECT Bairro FROM bairros";
+
+      $stmt = $this->conexao->prepare($sql);
+      $stmt->execute();
+
+      return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+      error_log("Erro ao pegar os bairros: " . $e->getMessage());
+      return [];
+    }
+  }
 }

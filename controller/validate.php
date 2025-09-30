@@ -7,11 +7,12 @@ require_once 'Utilidades.php';
 
 if (!isset($_SESSION['usuario'])) {
   $_SESSION['usuario'] = [
-    'id' => null,
-    'nome' => null,
-    'telefone' => null,
-    'origem' => null,
     'inicio' => null,
+    'telefone' => null,
+    'nome' => null,
+    'origem' => null,
+    'endereco' => null,
+    'fim' => null,
   ];
   $_SESSION['carrinho'] = [];
   $_SESSION['produto_selecionado'] = null;

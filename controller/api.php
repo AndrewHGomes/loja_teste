@@ -126,6 +126,10 @@ try {
           $dados = ['message' => 'Nenhum pedido encontrado na sessão.'];
         }
         break;
+      case 'bairros':
+        $empresa = new Empresa();
+        $dados = $empresa->pegarTodosOsBairros();
+        break;
       case 'taxa-entrega':
         $bairro = isset($_GET['bairro']) ? $_GET['bairro'] : null;
         if ($bairro) {

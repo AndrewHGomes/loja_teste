@@ -18,13 +18,29 @@ export async function carregarHorarios() {
   return await apiGet("horarios");
 }
 
-export async function carregarTaxaEntrega(bairro, taxaFixaEmpresa) {
-  const resposta = await apiGet(
-    `taxa-entrega&bairro=${encodeURIComponent(bairro)}`
-  );
+export async function carregarBairros() {
+  try {
+    const resposta = await apiGet("bairros");
 
-  if (resposta.taxa !== null && resposta.taxa > 0) {
-    return resposta.taxa;
+    if (resposta) {
+      return resposta;
+    }
+  } catch (erro) {
+    throw erro;
   }
-  return taxaFixaEmpresa;
+}
+
+export async function carregarTaxaEntrega(bairro, taxaFixaEmpresa) {
+  try {
+    const resposta = await apiGet(
+      `taxa-entrega&bairro=${encodeURIComponent(bairro)}`
+    );
+
+    if (resposta.taxa !== null && resposta.taxa > 0) {
+      return resposta.taxa;
+    }
+    return taxaFixaEmpresa;
+  } catch (erro) {
+    throw erro;
+  }
 }
