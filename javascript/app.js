@@ -1073,36 +1073,36 @@ async function gerenciarFinalizacao(sessaoCarregada) {
       backdrop: "rgba(0,0,0,0.7)",
 
       html: `
-                <style>
-                  .entrega-button-group input[type="radio"] { display: none; }
-                  .entrega-button-group label {
-                    display: inline-block; padding: 8px 16px; margin: 5px;
-                    border: 1px solid #ccc; border-radius: 25px; cursor: pointer;
-                    font-weight: bold; transition: all 0.1s; width: 200px; text-align: center;
-                  }
-                  .entrega-button-group input[type="radio"]:checked + label {
-                    background-color: #080; color: white; border-color: #080;
-                    box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
-                  }
-                  .entrega-button-group .disabled { opacity: 0.6; cursor: not-allowed; }
-                </style>
+            <style>
+              .entrega-button-group input[type="radio"] { display: none; }
+              .entrega-button-group label {
+                display: inline-block; padding: 8px 16px; margin: 5px;
+                border: 1px solid #ccc; border-radius: 25px; cursor: pointer;
+                font-weight: bold; transition: all 0.1s; width: 200px; text-align: center;
+              }
+              .entrega-button-group input[type="radio"]:checked + label {
+                background-color: #080; color: white; border-color: #080;
+                box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.2);
+              }
+              .entrega-button-group .disabled { opacity: 0.6; cursor: not-allowed; }
+            </style>
 
-                <div style="text-align: center;">
-                  <div class="entrega-button-group" style="display: inline-block;">
-                    <input type="radio" id="retirada" name="forma-entrega" value="R" />
-                    <label for="retirada">
-                    <i class="fas fa-walking"></i> Retirar <br> <small>Sem taxa de entrega</small>
-                    </label>
-                  </div>
+            <div style="text-align: center;">
+              <div class="entrega-button-group" style="display: inline-block;">
+                <input type="radio" id="retirada" name="forma-entrega" value="R" />
+                <label for="retirada">
+                <i class="fas fa-walking"></i> Retirar <br> <small>Sem taxa de entrega</small>
+                </label>
+              </div>
 
-                  <div class="entrega-button-group" style="display: inline-block;">
-                    <input type="radio" id="entrega" name="forma-entrega" value="E" ${entregaDisabled} />
-                    <label for="entrega" class="${entregaDisabled}">
-                    <i class="fas fa-motorcycle"></i> ${textoEntrega}
-                    </label>
-                  </div>
-                </div>
-                `,
+              <div class="entrega-button-group" style="display: inline-block;">
+                <input type="radio" id="entrega" name="forma-entrega" value="E" ${entregaDisabled} />
+                <label for="entrega" class="${entregaDisabled}">
+                <i class="fas fa-motorcycle"></i> ${textoEntrega}
+                </label>
+              </div>
+            </div>
+            `,
       confirmButtonText: "Confirmar",
       confirmButtonColor: "#080",
       allowOutsideClick: false,
@@ -1251,6 +1251,15 @@ async function gerenciarFinalizacao(sessaoCarregada) {
         enderecoParaEnvio = enderecoEntrega;
         const taxa = enderecoEntrega.taxa || 0;
         totalGeral = Number(subtotal) + Number(taxa);
+
+        const dadosParaSessao = {
+          forma_entrega: "E",
+          endereco: enderecoParaEnvio,
+          taxa_entrega: taxa.toFixed(2),
+          total_geral: totalGeral.toFixed(2),
+        };
+
+        await apiPost("atualizar-sessao-entrega", dadosParaSessao);
 
         divTipoEntrega.innerHTML = `<i class="fas fa-motorcycle"></i> Entregar`;
 

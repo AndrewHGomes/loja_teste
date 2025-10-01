@@ -7,6 +7,7 @@ require_once 'Conexao.php';
 require_once 'Empresa.php';
 require_once 'Produtos.php';
 require_once 'Utilidades.php';
+require_once 'Pedido.php';
 
 try {
   $metodo = $_SERVER['REQUEST_METHOD'];
@@ -221,6 +222,61 @@ try {
         } else {
           $response_code = 400;
           $dados = ['message' => 'Dados de carrinho ou subtotal ausentes.', 'sucesso' => false];
+        }
+        break;
+      case 'atualizar-sessao-entrega':
+        $json_payload = file_get_contents('php://input');
+        $payload = json_decode($json_payload, true);
+
+        if (!isset($_SESSION['pedido_finalizacao'])) {
+          $response_code = 400;
+          $dados = ['message' => 'Pedido não iniciado na sessão.', 'sucesso' => false];
+          break;
+        }
+        $_SESSION['pedido_finalizacao']['forma_entrega'] = isset($payload['forma_entrega']) ? $payload['forma_entrega'] : 'R';
+        $_SESSION['pedido_finalizacao']['endereco'] = isset($payload['endereco']) ? $payload['endereco'] : null;
+        $_SESSION['pedido_finalizacao']['taxa_entrega'] = isset($payload['taxa_entrega']) ? $payload['taxa_entrega'] : '0.00';
+        $totalGeral = isset($payload['total_geral']) ? $payload['total_geral'] : (isset($_SESSION['pedido_finalizacao']['subtotal']) ? $_SESSION['pedido_finalizacao']['subtotal'] : '0.00');
+        $_SESSION['pedido_finalizacao']['total_geral'] = $totalGeral;
+
+        $_SESSION['pedido_finalizacao']['status'] = 'ENDERECO_DEFINIDO';
+        if (isset($_SESSION['usuario']) && $_SESSION['usuario']['origem'] != 'M' && isset($payload['endereco']['endereco'])) {
+          $_SESSION['usuario']['endereco'] = [
+            'endereco' => $payload['endereco']['endereco'],
+            'numero' => $payload['endereco']['numero'],
+          ];
+        }
+        $dados = ['message' => 'Informações de entrega salvas com sucesso.', 'sucesso' => true];
+        break;
+      case 'finalizar-pedido':
+        $json_payload = file_get_contents('php://input');
+        $payload = json_decode($json_payload, true);
+        try {
+          if (!isset($_SESSION['pedido_finalizacao']) || empty($_SESSION['carrinho'])) {
+            $response_code = 400;
+            $dados = ['message' => 'Pedido vazio ou expirado na sessão.', 'sucesso' => false];
+            break;
+          }
+          $pedidoManager = new Pedido(Conexao::instancia());
+          $resultado = $pedidoManager->concluirPedido($payload, $_SESSION);
+          if ($resultado['status'] === 'sucesso') {
+            $_SESSION['carrinho'] = [];
+            $_SESSION['produto_selecionado'] = null;
+            $_SESSION['pedido_finalizacao'] = null;
+
+            $dados = [
+              'message' => 'Pedido finalizado com sucesso!',
+              'sucesso' => true,
+              'codigo' => $resultado['cod_venda']
+            ];
+          } else {
+            $response_code = 500;
+            $dados = ['message' => 'Falha interna ao salvar pedido.', 'sucesso' => false];
+          }
+        } catch (Exception $e) {
+          $response_code = 500;
+          error_log("Erro de finalização de pedido: " . $e->getMessage());
+          $dados = ['message' => $e->getMessage(), 'sucesso' => false];
         }
         break;
       default:

@@ -376,3 +376,23 @@ footer section .fa-x {
   font-weight: bold;
   color: #28a745;
 }
+
+/* Estilo para o Botão Voltar ao Topo */
+#back-to-top-btn {
+  position: fixed;
+  bottom: 0.4em;
+  right: 2em;
+  z-index: 20;
+  background-color: #080;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 0.4em 0.5em;
+  border-radius: 50%;
+  box-shadow: var(--sombra-box);
+  transition: background-color 0.2s ease;
+}
+
+#back-to-top-btn:hover {
+  background-color: #040;
+}
