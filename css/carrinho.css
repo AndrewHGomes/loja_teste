@@ -1,29 +1,17 @@
-#nav-voltar {
-  background-color: #333;
-  padding: 0.5em;
-  box-shadow: var(--sombra-embaixo);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+/* =========================================== */
+/* 4. ESTILOS DA PÁGINA DO CARRINHO (carrinho.css) */
+/* (Estende o header global)                       */
+/* =========================================== */
 
-#nav-voltar a {
-  text-decoration: none;
-  color: #fff;
-  font-size: 1.1em;
-}
-
+/* Navegação de Retorno - Complemento */
 #nav-voltar .fa-trash {
   color: #fff;
 }
 
+/* Header da Página do Carrinho */
 header {
-  background-color: #f0f0f0;
-  height: 8em;
-  overflow: hidden;
-  display: flex;
+  height: 8em; /* Sobrescreve o height de 9em do index */
   justify-content: space-around;
-  align-items: center;
 }
 
 header img {
@@ -39,6 +27,7 @@ header .fa-handshake {
   text-shadow: var(--sombra-texto);
 }
 
+/* Lista de Produtos */
 #produto-box-carrinho {
   color: #333;
   padding: 0.5em;
@@ -94,6 +83,7 @@ header .fa-handshake {
   border-radius: 2px;
 }
 
+/* Botões de Ação */
 #section-botoes {
   padding: 0.5em;
   display: flex;

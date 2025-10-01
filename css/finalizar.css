@@ -1,18 +1,9 @@
-#nav-voltar {
-  background-color: #333;
-  padding: 0.5em;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: var(--sombra-embaixo);
-}
+/* =========================================== */
+/* 5. ESTILOS DA PÁGINA DE FINALIZAR (finalizar.css) */
+/* (Usa o #nav-voltar global)                      */
+/* =========================================== */
 
-#nav-voltar a {
-  text-decoration: none;
-  color: #fff;
-  font-size: 1.1em;
-}
-
+/* Conteúdo do Checkout */
 #checkout-container {
   padding: 0.5em;
   display: flex;
@@ -24,7 +15,7 @@
   margin-bottom: 0.5em;
 }
 
-/* Estilos da Escolha de Entrega */
+/* Escolha de Entrega */
 #checkout-container .tipo {
   width: 100%;
   background-color: #cfffc1;
@@ -51,7 +42,7 @@
   font-size: 1em;
 }
 
-/* Estilos da Retirada */
+/* Bloco de Retirada */
 #checkout-container .endereco-retirada {
   border: 1px solid #e0e0e0;
   padding: 0.5em;
@@ -68,7 +59,7 @@
   font-size: 0.8em;
 }
 
-/* Estilos dos Totais */
+/* Totais do Pedido (Subtotal, Taxa, Total) */
 #checkout-container .row {
   padding: 0.3em 0;
   border-bottom: 1px solid #cfcfcf;
@@ -77,7 +68,7 @@
   justify-content: space-between;
 }
 
-/* Estilos dos Dados Pessoais (Fieldset/Input) */
+/* Dados Pessoais (Nome/Telefone) */
 #checkout-container fieldset {
   padding: 0.3em;
   border: 1px solid #e0e0e0;
@@ -102,7 +93,7 @@
   font-size: 1em;
 }
 
-/* Estilos do Botão Finalizar */
+/* Botão de Finalizar */
 #checkout-container #btn-finalizar {
   background-color: #080;
   color: #fff;
