@@ -1,3 +1,4 @@
+<!-- api.php -->
 <?php
 
 ob_start();
