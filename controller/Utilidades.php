@@ -1,7 +1,5 @@
-<!-- Utilidades.php -->
 <?php
 
-require_once 'session_init.php';
 require_once 'Conexao.php';
 
 class Utilidades
@@ -21,7 +19,7 @@ class Utilidades
 
   public function estaLogado()
   {
-    return isset($_SESSION['fone']);
+    return isset($_SESSION['usuario']['telefone']) && !empty($_SESSION['usuario']['telefone']);
   }
 
   //===========================================================================

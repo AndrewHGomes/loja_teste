@@ -185,9 +185,6 @@ function gerenciarCategoriasMercadorias(categorias, produtos) {
             const tamanhos = await carregarTamanhos(mercadoria.Codigo);
             const sabores = await carregarSabores(mercadoria.Codigo);
             const bordas = await carregarBordas();
-            console.log(tamanhos);
-            console.log(sabores);
-            console.log(bordas);
 
             let tamanhoFinal = null;
             let precoFinal = Number(mercadoria.Venda).toFixed(2);
@@ -1307,6 +1304,8 @@ async function gerenciarFinalizacao(sessaoCarregada) {
 
         const finalizacaoHandler = async () => {
           const nomeCliente = inputNomeF.value.trim();
+          const obsInput = capturar("#input-observacao");
+          const observacao = obsInput ? obsInput.value.trim() : "";
 
           if (!nomeCliente || nomeCliente.length < 3) {
             Swal.fire(
@@ -1317,14 +1316,21 @@ async function gerenciarFinalizacao(sessaoCarregada) {
             return;
           }
 
+          let dadosPagamento = null;
+
           if (formaEntrega === "E") {
-            await showModalPagamentoEntrega(totalGeral);
+            dadosPagamento = await showModalPagamentoEntrega(totalGeral);
           } else {
-            await Swal.fire(
-              "Pedido Finalizado!",
-              "Simulação: Retirada no local.",
-              "success"
-            );
+            dadosPagamento = {
+              formapgto: "L",
+              troco: "0.00",
+              nomeCliente,
+              observacao,
+            };
+          }
+
+          if (dadosPagamento) {
+            await enviarPedidoFinal(dadosPagamento);
           }
         };
 
@@ -1421,12 +1427,12 @@ async function showModalPagamentoEntrega(totalGeral) {
             <style>
                 /* Estilos reintroduzidos para os botões de rádio */
                 #forma-pagamento-modal {
-                    gap: 0.3em !important; /* REDUZIDO: Espaçamento menor entre os blocos principais */
+                    gap: 0.3em !important; 
                 }
                 #forma-pagamento-modal .radio {
                     display: block;
                     cursor: pointer;
-                    margin: 0.3em 0; /* REDUZIDO: Margem vertical menor entre os botões */
+                    margin: 0.3em 0; 
                 }
                 #forma-pagamento-modal .radio input[type="radio"] {
                     display: none;
@@ -1448,29 +1454,29 @@ async function showModalPagamentoEntrega(totalGeral) {
                 #forma-pagamento-modal .radio input[type="radio"]:checked + span {
                     background-color: #cfffc1;
                     border-color: #080;
-                    box-shadow: 0 0 5px rgba(0, 128, 0, 0.5); /* Sombra verde */
+                    box-shadow: 0 0 5px rgba(0, 128, 0, 0.5); 
                     color: #000;
                 }
                 /* Estilo do input de Troco */
                 #input-troco-modal {
-                    margin-top: 5px; /* ESPAÇAMENTO AJUSTADO */
-                    margin-bottom: 5px; /* ESPAÇAMENTO AJUSTADO */
+                    margin-top: 5px; 
+                    margin-bottom: 5px; 
                 }
                 /* Estilo da caixa de Info PIX */
                 #info-pix-box-modal {
-                    margin-top: 8px; /* ESPAÇAMENTO AJUSTADO */
-                    padding: 8px; /* REDUZIDO: Padding interno da caixa */
+                    margin-top: 8px; 
+                    padding: 8px; 
                     background-color: #f7f7f7;
                     border: 1px dashed #080;
                     border-radius: 4px;
                 }
                 #info-pix-box-modal p {
-                    margin: 1px 0; /* REDUZIDO: Margem entre as linhas de texto */
+                    margin: 1px 0; 
                     font-size: 0.9em;
                 }
                 #info-pix-box-modal #btn-copiar-pix-modal {
-                    margin-top: 4px; /* ESPAÇAMENTO AJUSTADO */
-                    padding: 6px 10px; /* REDUZIDO: Padding do botão */
+                    margin-top: 4px; 
+                    padding: 6px 10px; 
                 }
             </style>
 
@@ -1481,7 +1487,7 @@ async function showModalPagamentoEntrega(totalGeral) {
                     <span><i class="fa-solid fa-money-bill-wave"></i> Dinheiro</span>
                 </label>
                 <input type="number" id="input-troco-modal" placeholder="Levar Troco Para R$ ?" value="0" 
-                       style="display: none; padding: 0.5em; border: 1px solid #080; outline: none; text-align: center; width: 100%; box-sizing: border-box;" />
+                    style="display: none; padding: 0.5em; border: 1px solid #080; outline: none; text-align: center; width: 100%; box-sizing: border-box;" />
 
                 <label class="radio cartao">
                     <input type="radio" required class="pagamento-cartao" name="forma-pagamento-modal" value="C" />
@@ -1529,7 +1535,6 @@ async function showModalPagamentoEntrega(totalGeral) {
       if (btnCopiar) {
         const copyHandler = () => copiarChavePix(CHAVE_PIX);
         btnCopiar.addEventListener("click", copyHandler);
-
         btnCopiar.currentHandler = copyHandler;
       }
     },
@@ -1544,34 +1549,77 @@ async function showModalPagamentoEntrega(totalGeral) {
         return false;
       }
 
-      if (radioSelecionado.value === "D") {
+      const formapgto = radioSelecionado.value;
+      let troco = "0.00";
+
+      if (formapgto === "D") {
         const inputTroco = document.querySelector("#input-troco-modal");
+        troco = inputTroco.style.display !== "none" ? inputTroco.value : "0.00";
 
-        if (inputTroco.style.display !== "none") {
-          const troco = Number(inputTroco.value) || 0;
-
-          if (troco > 0 && troco < totalGeral) {
-            Swal.showValidationMessage(
-              `O valor do troco (R$ ${troco.toFixed(
-                2
-              )}) deve ser igual ou maior que o total do pedido (R$ ${totalGeral.toFixed(
-                2
-              )}).`
-            );
-            return false;
-          }
+        if (Number(troco) > 0 && Number(troco) < totalGeral) {
+          Swal.showValidationMessage(
+            `O valor do troco (R$ ${Number(troco).toFixed(
+              2
+            )}) deve ser igual ou maior que o total do pedido (R$ ${totalGeral.toFixed(
+              2
+            )}).`
+          );
+          return false;
         }
       }
 
-      return true;
+      const nomeClienteInput = document.querySelector(".nomef #input-nome");
+      const obsInput = document.querySelector("#input-observacao");
+
+      const nomeCliente = nomeClienteInput ? nomeClienteInput.value.trim() : "";
+      const observacao = obsInput ? obsInput.value.trim() : "";
+
+      return { formapgto, troco, nomeCliente, observacao };
     },
   });
 
   if (result.isConfirmed) {
-    await Swal.fire(
-      "Pedido Finalizado!",
-      "Simulação: Pagamento escolhido. Próxima etapa seria a submissão.",
-      "success"
+    return result.value;
+  }
+  return null;
+}
+
+async function enviarPedidoFinal(dadosPagamento) {
+  const { formapgto, troco, nomeCliente, observacao } = dadosPagamento;
+
+  const dadosFinalizacao = {
+    formapgto: formapgto,
+    troco: troco,
+    nome: nomeCliente,
+    observacao: observacao,
+    mesa: 0,
+  };
+
+  try {
+    const respostaApi = await apiPost("finalizar-pedido", dadosFinalizacao);
+
+    if (respostaApi.sucesso) {
+      Swal.fire({
+        title: "Pedido Finalizado!",
+        html: `O seu pedido <b>#${respostaApi.codigo}</b> foi enviado com sucesso!<br>Acompanhe o status pelo WhatsApp.`,
+        icon: "success",
+        confirmButtonText: "Entendi",
+      }).then(() => {
+        window.location.href = "./index.html";
+      });
+    } else {
+      Swal.fire(
+        "Erro ao Finalizar",
+        respostaApi.message || "Falha ao salvar o pedido. Tente novamente.",
+        "error"
+      );
+    }
+  } catch (error) {
+    console.error("Erro no envio do pedido:", error);
+    Swal.fire(
+      "Erro Crítico",
+      "Ocorreu uma falha na comunicação com o servidor. Verifique sua conexão.",
+      "error"
     );
   }
 }

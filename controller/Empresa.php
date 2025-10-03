@@ -1,7 +1,4 @@
-<!-- Empresa.php -->
 <?php
-
-require_once 'session_init.php';
 
 require_once 'Conexao.php';
 

@@ -49,7 +49,9 @@
         })
         .catch((erro) => {
           console.error("Erro na requisição:", erro);
-          window.location.href = "erro.html";
+          setTimeout(() => {
+            window.location.href = "https://agapesi.ddns.com.br/";
+          }, 3200);
         });
     </script>
   </body>

@@ -1,4 +1,3 @@
-<!-- api.php -->
 <?php
 
 ob_start();
@@ -258,8 +257,19 @@ try {
             $dados = ['message' => 'Pedido vazio ou expirado na sessão.', 'sucesso' => false];
             break;
           }
-          $pedidoManager = new Pedido(Conexao::instancia());
-          $resultado = $pedidoManager->concluirPedido($payload, $_SESSION);
+          if (!isset($payload['formapgto'])) {
+            throw new Exception("Forma de pagamento não especificada no payload.");
+          }
+          $_SESSION['pedido_finalizacao']['formapgto'] = $payload['formapgto'];
+          $_SESSION['pedido_finalizacao']['troco'] = (isset($payload['troco']) ? $payload['troco'] : '0.00');
+          $_SESSION['pedido_finalizacao']['observacao'] = (isset($payload['observacao']) ? $payload['observacao'] : '');
+          $nome_sessao = (isset($_SESSION['usuario']['nome']) ? $_SESSION['usuario']['nome'] : 'CLIENTE');
+          $_SESSION['pedido_finalizacao']['nome'] = (isset($payload['nome']) ? $payload['nome'] : $nome_sessao);
+          $_SESSION['pedido_finalizacao']['mesa'] = (isset($payload['mesa']) ? $payload['mesa'] : 0);
+          $_SESSION['pedido_finalizacao']['nome'] = (isset($payload['nome']) ? $payload['nome'] : $nome_sessao);
+          $_SESSION['pedido_finalizacao']['mesa'] = (isset($payload['mesa']) ? $payload['mesa'] : 0);
+          $pedidoManager = new Pedido();
+          $resultado = $pedidoManager->concluirPedido($_SESSION);
           if ($resultado['status'] === 'sucesso') {
             $_SESSION['carrinho'] = [];
             $_SESSION['produto_selecionado'] = null;
